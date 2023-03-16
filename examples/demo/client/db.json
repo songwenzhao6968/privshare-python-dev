@@ -1,0 +1,14 @@
+{
+    "t_deposit": {
+        "schema": {
+            "field": [
+                ["id", "int"],
+                ["user_name", "str"],
+                ["deposit", "int"]
+            ],
+            "key": {
+                "id": "primary"
+            }
+        }
+    }
+}
