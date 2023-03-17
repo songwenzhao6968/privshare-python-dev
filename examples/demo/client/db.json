@@ -2,9 +2,9 @@
     "t_deposit": {
         "schema": {
             "field": [
-                ["id", "int"],
+                ["id", "uint8"],
                 ["user_name", "str"],
-                ["deposit", "int"]
+                ["deposit", "int16"]
             ],
             "key": {
                 "id": "primary"

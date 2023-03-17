@@ -1,14 +1,3 @@
-from enum import Enum
-
-class QType(Enum):
-    RETRIEVE = "Q_RETRIEVE"
-    AGGREGATE_ = "Q_AGGREGATE_"
-    AGGREGATE_EXIST = "Q_AGGREGATE_EXIST"
-    AGGREGATE_CNT = "Q_AGGREGATE_CNT"
-    AGGREGATE_SUM = "Q_AGGREGATE_SUM"
-    AGGREGATE_AVG = "Q_AGGREGATE_AVG"
-    AGGREGATE_CNT_UNQ = "Q_AGGREGATE_CNT_UNQ"
-    AGGREGATE__ = "Q_AGGREGATE__"
-
-print(QType.RETRIEVE.value<QType.AGGREGATE_.value)
-
+def func(y: int=None):
+    return y
+print(func())

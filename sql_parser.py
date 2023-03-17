@@ -2,15 +2,15 @@ import json
 from enum import Enum
 
 class Predicate:
-    def __init__(self, tokens=None):
+    def __init__(self, tokens=None, type=None, is_leaf=None, left_child=None, right_child=None):
         if tokens == None:
-            self.is_leaf = False
-            self.type = None
-            self.left_child = None
-            self.right_child = None
+            self.type = type
+            self.is_leaf = is_leaf
+            self.left_child = left_child
+            self.right_child = right_child
             return
-        self.is_leaf = True
         self.type = tokens[1]
+        self.is_leaf = True
         self.concerned_column = tokens[0]
         self.value = tokens[2]
         if self.value[0] != '\"':
@@ -43,11 +43,12 @@ class Predicate:
             elif token == ')':
                 cnt_bracket -= 1
             elif cnt_bracket == 0 and (token == "OR" or token == "AND"):
-                pred = Predicate()
-                pred.type = token
-                pred.left_child = Predicate.generate_predicates(tokens[:i])
-                pred.right_child = Predicate.generate_predicates(tokens[i+1:])
-                return pred
+                return Predicate(
+                    type = token,
+                    is_leaf = False,
+                    left_child = Predicate.generate_predicates(tokens[:i]),
+                    right_child = Predicate.generate_predicates(tokens[i+1:])
+                )
         # Tokens should now be (column, op, value)
         return Predicate(tokens)
         
@@ -88,22 +89,24 @@ class Predicate:
         }
 
     @staticmethod
-    def deserialize_from_json(json_pred):
-        pred = Predicate()
-        pred.is_leaf = json_pred["is_leaf"]
-        pred.type = json_pred["type"]
+    def deserialize_from_json(pred_json):
+        pred = Predicate(type=pred_json["type"], is_leaf=pred_json["is_leaf"])
         if pred.is_leaf:
-            pred.concerned_column = json_pred["concerned_column"]
-            pred.value = json_pred["value"]
+            pred.concerned_column = pred_json["concerned_column"]
+            pred.value = pred_json["value"]
         else:
-            pred.left_child = Predicate.deserialize_from_json(json_pred["children"][0])
-            pred.right_child = Predicate.deserialize_from_json(json_pred["children"][1])
+            pred.left_child = Predicate.deserialize_from_json(pred_json["children"][0])
+            pred.right_child = Predicate.deserialize_from_json(pred_json["children"][1])
         return pred
     
     def dump(self):
         return json.dumps(self.serialize_to_json())
+
+    @staticmethod
+    def from_dump(pred_dump):
+        return Predicate.deserialize_from_json(json.loads(pred_dump))
     
-class QType(Enum):
+class QueryType(Enum):
     RETRIEVE = "retrieve"
     AGGREGATE_ = "aggregate_"
     AGGREGATE_EXIST = "aggregate_exist"
@@ -114,7 +117,7 @@ class QType(Enum):
     AGGREGATE__ = "aggregate__"
 
 class Query:
-    def __init__(self, sql=None):
+    def __init__(self, sql=None, type=None, concerned_column=None, concerned_table=None, pred=None):
         def get_tokens(sql):
             tokens, i, pre = [], 0, 0
             while i < len(sql):
@@ -130,6 +133,10 @@ class Query:
             return [token for token in tokens if token != '']
 
         if sql == None:
+            self.type = type
+            self.concerned_column = concerned_column
+            self.concerned_table = concerned_table
+            self.pred = pred
             return
         # Seperate different parts
         sql = sql.replace('\n', ' ').strip()
@@ -147,18 +154,18 @@ class Query:
         if '(' in tokens_select:
             func, column = tokens_select[0], tokens_select[2]
             if func == "EXIST":
-                self.type = QType.AGGREGATE_EXIST
+                self.type = QueryType.AGGREGATE_EXIST
             elif func == "COUNT":
-                self.type = QType.AGGREGATE_CNT
+                self.type = QueryType.AGGREGATE_CNT
             elif func == "SUM":
-                self.type = QType.AGGREGATE_SUM
+                self.type = QueryType.AGGREGATE_SUM
             elif func == "AVG":
-                self.type = QType.AGGREGATE_AVG
+                self.type = QueryType.AGGREGATE_AVG
             elif func == "COUNT_UNIQUE":
-                self.type = QType.AGGREGATE_CNT_UNQ
+                self.type = QueryType.AGGREGATE_CNT_UNQ
             self.concerned_column = column.replace(')', '')
         else:
-            self.type = QType.RETRIEVE
+            self.type = QueryType.RETRIEVE
             self.concerned_column = []
             for token in tokens_select:
                 self.concerned_column.append(token.replace(',', ''))
@@ -166,14 +173,11 @@ class Query:
         self.pred = Predicate.generate_predicates(tokens[where_l:])
 
     def is_retrieve(self):
-        return self.type == QType.RETRIEVE
+        return self.type == QueryType.RETRIEVE
 
     def is_aggregate(self):
-        return (QType.AGGREGATE_.value < self.type.value and 
-            self.type.value < QType.AGGREGATE__.value)
-    
-    def is_aggregate_bool(self): # later: change to return type
-        return self.type == QType.AGGREGATE_EXIST
+        return (QueryType.AGGREGATE_.value < self.type.value and 
+            self.type.value < QueryType.AGGREGATE__.value)
     
     def serialize_to_json(self):
         return {
@@ -184,22 +188,26 @@ class Query:
         }
 
     @staticmethod
-    def deserialize_from_json(json_query):
-        query = Query()
-        query.type = QType(json_query["type"])
-        query.concerned_column = json_query["concerned_column"]
-        query.concerned_table = json_query["concerned_table"]
-        query.pred = Predicate.deserialize_from_json(json.loads(json_query["predicate"]))
-        return query
+    def deserialize_from_json(query_json):
+        return Query(
+            type = QueryType(query_json["type"]),
+            concerned_column = query_json["concerned_column"],
+            concerned_table = query_json["concerned_table"],
+            pred = Predicate.deserialize_from_json(json.loads(query_json["predicate"])),
+        )
     
     def dump(self):
         return json.dumps(self.serialize_to_json())
+    
+    @staticmethod
+    def from_dump(query_dump):
+        return Query.deserialize_from_json(json.loads(query_dump))
 
 
 if __name__ == "__main__":
     # test
     sql = "SELECT SUM(deposit) FROM t_deposit WHERE (user_name = \"Robert\" AND id < 16) OR id >= 8"
-    dump_query = Query(sql).dump()
-    print(dump_query)
-    query = Query.deserialize_from_json(json.loads(dump_query))
+    query_dump = Query(sql).dump()
+    print(query_dump)
+    query = Query.from_dump(query_dump)
     print(query.dump())

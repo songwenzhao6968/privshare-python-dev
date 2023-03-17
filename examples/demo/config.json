@@ -1,10 +1,14 @@
 {
-    "compile": {
-        "basic_eq_block_width": 8
+    "debug": {
+        "timing": true
     },
     "he": {
         "poly_modulus_degree_bit_size": 14,
-        "plain_modulus_bit_size": 18
+        "plain_modulus_bit_size": 18,
+        "security_parameter": 128
+    },
+    "execution": {
+        "basic_block_bit_width": 8
     },
     "tables": [
         {
