@@ -53,23 +53,23 @@ class Predicate:
         return Predicate(tokens)
         
 
-    def check(self, record):
+    def check(self, record, schema):
         if self.type == "AND":
             return self.left_child.check(record) and self.right_child.check(record)
         elif self.type == "OR":
             return self.left_child.check(record) or self.right_child.check(record)
         elif self.type == "<":
-            return record[self.concerned_column] < self.value
+            return record[schema.get_id(self.concerned_column)] < self.value
         elif self.type == "<=":
-            return record[self.concerned_column] <= self.value
+            return record[schema.get_id(self.concerned_column)] <= self.value
         elif self.type == ">":
-            return record[self.concerned_column] > self.value
+            return record[schema.get_id(self.concerned_column)] > self.value
         elif self.type == ">=":
-            return record[self.concerned_column] >= self.value
+            return record[schema.get_id(self.concerned_column)] >= self.value
         elif self.type == "=":
-            return record[self.concerned_column] == self.value
+            return record[schema.get_id(self.concerned_column)] == self.value
         elif self.type == "!=":
-            return record[self.concerned_column] != self.value
+            return record[schema.get_id(self.concerned_column)] != self.value
 
     def serialize_to_json(self):
         if self.is_leaf:
@@ -205,7 +205,7 @@ class Query:
 
 
 if __name__ == "__main__":
-    # test
+    # Test
     sql = "SELECT SUM(deposit) FROM t_deposit WHERE (user_name = \"Robert\" AND id < 16) OR id >= 8"
     query_dump = Query(sql).dump()
     print(query_dump)

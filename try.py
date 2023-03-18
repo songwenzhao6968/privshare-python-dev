@@ -1,3 +1,4 @@
-def func(y: int=None):
-    return y
-print(func())
+from sql_parser import json
+import numpy as np
+a = 0, 1
+print(type(a))

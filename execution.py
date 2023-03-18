@@ -1,18 +1,20 @@
 import json
 from enum import Enum
 import myutil
-from sql_parser import Predicate, Query, QueryType
-from database import DataType
+from sql_parser import Query, QueryType, Predicate
+from database import DataBase, DataType, Table
+import numpy as np
+import he
 
 class NodeType(Enum):
-    RETURN = "return",
-    RETRIEVAL = "retrieval",
-    AGGREGATION = "aggregation",
-    AND = "and",
-    OR = "or",
-    NOT = "not",
-    EQUAL = "equal",
-    RANGE = "range",
+    RETURN = "return"
+    RETRIEVAL = "retrieval"
+    AGGREGATION = "aggregation"
+    AND = "and"
+    OR = "or"
+    NOT = "not"
+    EQUAL = "equal"
+    RANGE = "range"
     BASIC = "basic"
 
 class ComputationNode():
@@ -94,7 +96,7 @@ class ReturnNode(ComputationNode):
         ret["concerned_table"] = self.concerned_table
         return ret
     
-    def process(database, config):
+    def process(db: DataBase, config):
         pass
 
 class RetrievalNode(ComputationNode):
@@ -154,7 +156,7 @@ class EqualNode(ComputationNode):
             self.need_str_to_uint_conversion = need_str_to_uint_conversion
             self.value = value
             return
-        dtype = schema[concerned_column]
+        dtype = schema.get_type(concerned_column)
         temp = { # DataType: (bit_width, need_int_to_uint_conversion, need_str_to_uint_conversion)
             DataType.UINT8: (8, False, False),
             DataType.UINT16: (16, False, False),
@@ -193,7 +195,7 @@ class RangeNode(ComputationNode):
             self.value_r = value_r
             return
         self.concerned_column = concerned_column
-        dtype = schema[concerned_column]
+        dtype = schema.get_type(concerned_column)
         temp = { # DataType: (bit_width, need_int_to_uint_conversion)
             DataType.UINT8: (8, False),
             DataType.UINT16: (16, False),
@@ -267,8 +269,24 @@ class MatchBitsNode(ComputationNode):
         ret["mapping_cipher_offset"] = self.mapping_cipher_offset
         return ret
     
-    def process(table, config):
-        pass
+    def process(self, table: Table, HE, config):
+        concerned_column_id = table.schema.get_id(self.concerned_column)
+        column = []
+        for record in table.data:
+            value = record[concerned_column_id]
+            if self.need_str_to_uint_conversion:
+                value = myutil.str_to_uint(value)
+            elif self.need_int_to_uint_conversion:
+                value = myutil.int_to_uint(value)
+            value = (value >> self.offset) & ((1 << MatchBitsNode.bit_width) - 1)
+            column.append(value)
+            if len(column) == HE.n:
+                x = np.array(column, dtype=np.int64)
+                apply_elementwise_mapping()
+
+            
+
+        
 
 class ExecutionTree():
     def __init__(self, query: Query=None, schema=None, root=None):

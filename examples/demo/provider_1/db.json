@@ -7,7 +7,7 @@
                 ["deposit", "int16"]
             ],
             "key": {
-                "id": "primary"
+                "primary": "id"
             }
         },
         "data": [
