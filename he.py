@@ -35,7 +35,7 @@ def sum_cipher(cipher, HE):
     cipher += HE.flip(cipher, True)
     for i in range(n_bits-2, -1, -1):
         cipher += HE.rotate(cipher, 1<<i, True)
-    return HE.flip(cipher)
+    return cipher
 
 def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width, x, HE):
     n_bits, mapping_width = int(np.log2(HE.n)), 1 << mapping_bit_width
@@ -65,10 +65,10 @@ def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width,
 
 if __name__ == "__main__":
     # Some tests
-    test_id = 3
+    test_id = 2
     if test_id == 1:
         print("Test 1: Basic Encryption and Decryption")
-        HE = create_HE_object()
+        HE = create_he_object()
         pub_keys_bytes = save_public_to_bytes(HE)
         HE_pub = load_public_from_bytes(pub_keys_bytes)
         arr1 = np.array([1, 2, 3], dtype=np.int64)
@@ -85,13 +85,13 @@ if __name__ == "__main__":
         print("arr1 = ", arr1, "\narr2 = ", arr2, "\narr1 * arr2 = ", arr3)
     elif test_id == 2:
         print("Test 2: sum_cipher")
-        HE = create_HE_object()
+        HE = create_he_object()
         arr = np.array([1, 2, 3, 4], dtype=np.int64)
         ctxt = HE.encryptInt(arr)
         print("arr = ", arr, "\nsum_cipher = ", HE.decryptInt(sum_cipher(ctxt, HE)))
     elif test_id == 3:
         print("Test 3: apply_elementwise_mapping")
-        HE = create_HE_object()
+        HE = create_he_object()
         # Construct mapping [1, 5, 10, 15, 20, 1, ... ,1]
         mapping = np.ones(1<<14, dtype=np.int64)
         mapping[10*(1<<8)+1:10*(1<<8)+5] = [5, 10, 15, 20]
