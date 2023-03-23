@@ -1,22 +1,22 @@
 {
     "debug": {
-        "timing": true
+        "timing": true,
+        "print_secure_execution_tree": false
+    },
+    "compile": {
+        "basic_block_bit_width": 8
     },
     "he": {
         "poly_modulus_degree_bit_size": 14,
         "plain_modulus_bit_size": 18,
         "security_parameter": 128
     },
-    "execution": {
-        "basic_block_bit_width": 8
-    },
-    "tables": [
-        {
-            "name": "t_salary",
+    "tables": {
+        "t_deposit": {
             "schema_file_loc": "./examples/demo/client/db.json",
             "providers": ["provider_1"]
         }
-    ],
+    },
     "servers": {
         "provider_1": {
             "type": "local",

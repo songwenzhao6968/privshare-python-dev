@@ -1,7 +1,7 @@
 {
     "t_deposit": {
         "schema": {
-            "field": [
+            "fields": [
                 ["id", "uint8"],
                 ["user_name", "str"],
                 ["deposit", "int16"]
@@ -9,6 +9,7 @@
             "key": {
                 "id": "primary"
             }
-        }
+        },
+        "data": null
     }
 }
