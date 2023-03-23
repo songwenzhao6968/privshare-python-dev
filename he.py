@@ -5,7 +5,7 @@ def create_he_object(config=None, n=1<<14, t_bits=18, sec=128):
     if config != None:
         n = 1 << config["poly_modulus_degree_bit_size"]
         t_bits = config["plain_modulus_bit_size"]
-        sec = config["he"]["security_parameter"]
+        sec = config["security_parameter"]
     HE = Pyfhel()
     bfv_params = {
         'scheme': 'BFV',
@@ -53,19 +53,21 @@ def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width,
         rotated_mapping_ciphers.append(HE.rotate(rotated_mapping_ciphers[-1], 1, True))
     # Construct indicator vectors in batch
     batched_ind = np.zeros((mapping_width, HE.n), dtype=np.int64)
-    for i in range(HE.n):
+    assert x.shape[0] <= HE.n
+    for i in range(x.shape[0]):
         batched_ind[(x[i]-i)%mapping_width][i] = 1
     # Index values with correct locations
     y_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
     for i in range(mapping_width):
-        rotated_mapping_ciphers[i] *= HE.encodeInt(batched_ind[i])
-        y_cipher += rotated_mapping_ciphers[i]
+        if any(batched_ind[i]):
+            rotated_mapping_ciphers[i] *= HE.encodeInt(batched_ind[i])
+            y_cipher += rotated_mapping_ciphers[i]
     return y_cipher
 
 
 if __name__ == "__main__":
     # Some tests
-    test_id = 2
+    test_id = 3
     if test_id == 1:
         print("Test 1: Basic Encryption and Decryption")
         HE = create_he_object()
