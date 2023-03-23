@@ -16,7 +16,7 @@ class Pass:
             node.children = []
             for child in children:
                 node.link(rewrite_or_node(child))
-            return node
+            return nod
         
         exe_tree.root = rewrite_or_node(exe_tree.root)
         return exe_tree
