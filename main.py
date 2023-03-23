@@ -1,8 +1,8 @@
 import json
-from database import DataBase, Schema
+import myutil
+from database import DataBase
 from sql_parser import Query
 from secure_query import SecureQuery
-import numpy as np
 import he
 
 config_dir = "./examples/demo/config.json"
@@ -18,11 +18,10 @@ with open(config["tables"][query.concerned_table]["schema_file_loc"]) as f:
     schema = null_data_db[query.concerned_table].schema
 
 HE = he.create_he_object(config["he"])
-secure_query = SecureQuery(query, schema, HE, config["compile"])
+secure_query = SecureQuery(query, schema, HE, config["compile"], debug)
 pub_keys_bytes = he.save_public_to_bytes(HE)
 secure_query_dump, ciphers_bytes = secure_query.dump()
-
-if debug["print_secure_execution_tree"]:
+if debug["output_secure_execution_tree"]: 
     print(secure_query_dump)
 
 # Data Provider: Process encrypted query
@@ -31,8 +30,11 @@ with open(config["servers"]["provider_1"]["database_file_loc"]) as f:
 
 HE_pub = he.load_public_from_bytes(pub_keys_bytes)
 secure_query = SecureQuery.from_dump(secure_query_dump, ciphers_bytes, HE_pub)
-secure_result = secure_query.process(db, HE, None)
+secure_result = secure_query.process(db, HE, debug)
 
 # Client: Receive encrypted query result and decrypt
 ind = HE.decryptInt(secure_result[0])
-print("Result indicator vector:", ind.nonzero())
+print("Result rows:", ind.nonzero())
+
+if debug["timing"]:
+    myutil.report_event_times()

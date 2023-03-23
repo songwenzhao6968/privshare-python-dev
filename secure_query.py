@@ -7,18 +7,24 @@ import numpy as np
 from he import PyCtxt
 
 class SecureQuery():
-    def __init__(self, query: Query=None, schema=None, HE=None, config=None, 
+    def __init__(self, query: Query=None, schema=None, HE=None, config=None, debug=None,
                  exe_tree: ExecutionTree=None, mapping_ciphers=None):
         if query == None:
             self.exe_tree = exe_tree
             self.mapping_ciphers = mapping_ciphers
             return
         # Run Pass to transform the execution tree
+        if debug["timing"]: 
+            myutil.record_time("Secure Query Construction - Transformation", 0)
         assert MatchBitsNode.bit_width == config["basic_block_bit_width"]
         exe_tree = ExecutionTree(query, schema)
         exe_tree = Pass.remove_or(exe_tree)
         exe_tree = Pass.decompose_equal(exe_tree)
+        if debug["timing"]: 
+            myutil.record_time("Secure Query Construction - Transformation", 1)
         # Encrypt the execution tree
+        if debug["timing"]: 
+            myutil.record_time("Secure Query Construction - Encryption", 0)
         mappings = []
         def group_mappings(node):
             if node.type == NodeType.BASIC:
@@ -38,6 +44,8 @@ class SecureQuery():
         for mapping in mappings:
             mapping = np.array(mapping, dtype=np.int64)
             self.mapping_ciphers.append(HE.encryptInt(mapping))
+        if debug["timing"]: 
+            myutil.record_time("Secure Query Construction - Encryption", 1)
 
     def get_query_type(self):
         return self.exe_tree.get_query_type()

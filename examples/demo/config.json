@@ -1,7 +1,7 @@
 {
     "debug": {
         "timing": true,
-        "print_secure_execution_tree": false
+        "output_secure_execution_tree": false
     },
     "compile": {
         "basic_block_bit_width": 8

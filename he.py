@@ -1,3 +1,4 @@
+import myutil
 import numpy as np
 from Pyfhel import Pyfhel, PyCtxt
 
@@ -67,7 +68,7 @@ def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width,
 
 if __name__ == "__main__":
     # Some tests
-    test_id = 3
+    test_id = 0
     if test_id == 1:
         print("Test 1: Basic Encryption and Decryption")
         HE = create_he_object()
@@ -105,3 +106,33 @@ if __name__ == "__main__":
         y = HE.decryptInt(y_cipher)
         print("x[0:8] =", x[0:8], "\ny[0:8] =", y[0:8])
         print("x[(1<<8):(1<<8)+8] =", x[(1<<8):(1<<8)+8], "\ny[(1<<8):(1<<8)+8] =", y[(1<<8):(1<<8)+8])
+
+    # Test running time of HE operations
+    timing = True
+    if timing == True:
+        HE = create_he_object()
+        arr1 = np.arange(HE.n, dtype=np.int64)
+        arr2 = np.ones(HE.n, dtype=np.int64) * 3
+        ptxt1 = HE.encodeInt(arr1)
+        ptxt2 = HE.encodeInt(arr2)
+        ctxt1 = HE.encryptPtxt(ptxt1)
+        ctxt2 = HE.encryptPtxt(ptxt2)
+        myutil.record_time("HE Operation - Plaintext add (per record)", 0)
+        ctxt3 = ctxt1 + ptxt2
+        myutil.record_time("HE Operation - Plaintext add (per record)", 1, HE.n)
+        myutil.record_time("HE Operation - Ciphertext add (per record)", 0)
+        ctxt3 = ctxt1 + ctxt2
+        myutil.record_time("HE Operation - Ciphertext add (per record)", 1, HE.n)
+        myutil.record_time("HE Operation - Plaintext mul (per record)", 0)
+        ctxt3 = ctxt1 * ptxt2
+        myutil.record_time("HE Operation - Plaintext mul (per record)", 1, HE.n)
+        myutil.record_time("HE Operation - Ciphertext mul (per record)", 0)
+        ctxt3 = ctxt1 * ctxt2
+        myutil.record_time("HE Operation - Ciphertext mul (per record)", 1, HE.n)
+        myutil.record_time("HE Operation - Relinearization (per record)", 0)
+        ~ctxt3
+        myutil.record_time("HE Operation - Relinearization (per record)", 1, HE.n)
+        myutil.record_time("HE Operation - Rotation (per record)", 0)
+        ctxt3 = ctxt3 << 2
+        myutil.record_time("HE Operation - Rotation (per record)", 1, HE.n)
+        myutil.report_event_times()
