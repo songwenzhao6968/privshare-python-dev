@@ -1,6 +1,6 @@
 {
     "debug": {
-        "timing": true,
+        "timing": tre,
         "print_secure_execution_tree": false
     },
     "compile": {
