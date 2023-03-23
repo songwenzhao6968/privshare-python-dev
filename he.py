@@ -111,8 +111,8 @@ if __name__ == "__main__":
         print("x[(1<<8):(1<<8)+8] =", x[(1<<8):(1<<8)+8], "\ny[(1<<8):(1<<8)+8] =", y[(1<<8):(1<<8)+8])
 
     # Test running time of HE operations
-    timing = True
-    if timing == True:
+    test_time = True
+    if test_time == True:
         HE = create_he_object()
         arr1 = np.arange(HE.n, dtype=np.int64)
         arr2 = np.ones(HE.n, dtype=np.int64) * 3
