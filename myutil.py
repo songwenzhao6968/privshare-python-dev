@@ -23,7 +23,7 @@ def record_time(event_name, is_end, per_n=1, output_event_time=False):
             print("{0}: {1:.2f}µs".format(event_name, event_time))       
 
 def report_event_times():
-    with open("time.txt", "w") as f:
+    with open("time.txt", "a") as f:
         for event_name, event_time in event_times:
             f.write("{0}: {1:.2f}µs\n".format(event_name, event_time))   
             
