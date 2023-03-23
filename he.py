@@ -84,13 +84,13 @@ if __name__ == "__main__":
         _ctxt3 = _ctxt1 * _ctxt2
         ~_ctxt3
         arr3 = HE.decryptInt(_ctxt3)
-        print("arr1 = ", arr1, "\narr2 = ", arr2, "\narr1 * arr2 = ", arr3)
+        print("arr1 =", arr1, "\narr2 =", arr2, "\narr1 * arr2 =", arr3)
     elif test_id == 2:
         print("Test 2: sum_cipher")
         HE = create_he_object()
         arr = np.array([1, 2, 3, 4], dtype=np.int64)
         ctxt = HE.encryptInt(arr)
-        print("arr = ", arr, "\nsum_cipher = ", HE.decryptInt(sum_cipher(ctxt, HE)))
+        print("arr =", arr, "\nsum_cipher =", HE.decryptInt(sum_cipher(ctxt, HE)))
     elif test_id == 3:
         print("Test 3: apply_elementwise_mapping")
         HE = create_he_object()
@@ -103,5 +103,5 @@ if __name__ == "__main__":
         x[(1<<8)], x[(1<<8)+2], x[(1<<8)+4], x[(1<<8)+6] = 1, 2, 3, 4
         y_cipher = apply_elementwise_mapping(mapping_cipher, 10*(1<<8), 8, x, HE)
         y = HE.decryptInt(y_cipher)
-        print("x[0:8] = ", x[0:8], "\ny[0:8] = ", y[0:8])
-        print("x[(1<<8):(1<<8)+8] = ", x[(1<<8):(1<<8)+8], "\ny[(1<<8):(1<<8)+8] = ", y[(1<<8):(1<<8)+8])
+        print("x[0:8] =", x[0:8], "\ny[0:8] =", y[0:8])
+        print("x[(1<<8):(1<<8)+8] =", x[(1<<8):(1<<8)+8], "\ny[(1<<8):(1<<8)+8] =", y[(1<<8):(1<<8)+8])

@@ -1,2 +1,58 @@
+from execution import AndNode, NotNode, MatchBitsNode, NodeType
+
 class Pass:
-    pass
+    @staticmethod
+    def remove_or(exe_tree):
+        def rewrite_or_node(node):
+            if node.type == NodeType.OR:
+                node_not0, node_not1, node_not2 = NotNode(), NotNode(), NotNode()
+                node_and = AndNode()
+                node_not0.link(node_and)
+                node_and.link(node_not1); node_and.link(node_not2)
+                node_not1.link(rewrite_or_node(node.children[0]))
+                node_not2.link(rewrite_or_node(node.children[1]))
+                return node_not0
+            children = node.children
+            node.children = []
+            for child in children:
+                node.link(rewrite_or_node(child))
+            return node
+        
+        exe_tree.root = rewrite_or_node(exe_tree.root)
+        return exe_tree
+    
+    @staticmethod
+    def decompose_equal(exe_tree):
+        def rewrite_equal_node(node):
+            if node.type == NodeType.EQUAL:
+                if node.bit_width == 8:
+                    node_mb = MatchBitsNode.equal_decompose(node, 0)
+                    return node_mb
+                elif node.bit_width == 16:
+                    node_mb0 = MatchBitsNode.equal_decompose(node, 0)
+                    node_mb1 = MatchBitsNode.equal_decompose(node, 8)
+                    node_and = AndNode()
+                    node_and.link(node_mb0); node_and.link(node_mb1)
+                    return node_and
+                elif node.bit_width == 32:
+                    node_mb0 = MatchBitsNode.equal_decompose(node, 0)
+                    node_mb1 = MatchBitsNode.equal_decompose(node, 8)
+                    node_mb2 = MatchBitsNode.equal_decompose(node, 16)
+                    node_mb3 = MatchBitsNode.equal_decompose(node, 24)
+                    node_and0, node_and1, node_and2 = AndNode(), AndNode(), AndNode()
+                    node_and0.link(node_and1); node_and0.link(node_and2)
+                    node_and1.link(node_mb0); node_and1.link(node_mb1)
+                    node_and2.link(node_mb2); node_and2.link(node_mb3)
+                    return node_and0
+            children = node.children
+            node.children = []
+            for child in children:
+                node.link(rewrite_equal_node(child))
+            return node
+        
+        exe_tree.root = rewrite_equal_node(exe_tree.root)
+        return exe_tree
+
+    @staticmethod
+    def decompose_range(exe_tree):
+        raise NotImplementedError
