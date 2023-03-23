@@ -99,13 +99,6 @@ class Predicate:
             pred.right_child = Predicate.deserialize_from_json(pred_json["children"][1])
         return pred
     
-    def dump(self):
-        return json.dumps(self.serialize_to_json())
-
-    @staticmethod
-    def from_dump(pred_dump):
-        return Predicate.deserialize_from_json(json.loads(pred_dump))
-    
 class QueryType(Enum):
     RETRIEVE = "retrieve"
     AGGREGATE_ = "aggregate_"
