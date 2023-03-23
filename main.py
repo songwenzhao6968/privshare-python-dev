@@ -30,7 +30,7 @@ with open(config["servers"]["provider_1"]["database_file_loc"]) as f:
 
 HE_pub = he.load_public_from_bytes(pub_keys_bytes)
 secure_query = SecureQuery.from_dump(secure_query_dump, ciphers_bytes, HE_pub)
-secure_result = secure_query.process(db, HE, debug)
+secure_result = secure_query.process(db, HE_pub, debug)
 
 # Client: Receive encrypted query result and decrypt
 ind = HE.decryptInt(secure_result[0])
