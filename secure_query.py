@@ -8,7 +8,7 @@ from he import PyCtxt
 
 class SecureQuery():
     def __init__(self, query: Query=None, schema=None, HE=None, config=None, 
-                 exe_tree=None, mapping_ciphers=None):
+                 exe_tree: ExecutionTree=None, mapping_ciphers=None):
         if query == None:
             self.exe_tree = exe_tree
             self.mapping_ciphers = mapping_ciphers
@@ -17,26 +17,30 @@ class SecureQuery():
         assert MatchBitsNode.bit_width == config["basic_block_bit_width"]
         exe_tree = ExecutionTree(query, schema)
         exe_tree = Pass.remove_or(exe_tree)
-        self.exe_tree = Pass.decompose_equal(exe_tree)
-        self.exe_tree = Pass.decompose_range(exe_tree)
+        exe_tree = Pass.decompose_equal(exe_tree)
         # Encrypt the execution tree
         mappings = []
         def group_mappings(node):
             if node.type == NodeType.BASIC:
                 if not mappings or len(mappings[-1]) == HE.n:
                     mappings.append([])
-                node.mapping_cipher_id = len(mappings)
+                node.mapping_cipher_id = len(mappings) - 1
                 node.mapping_cipher_offset = len(mappings[-1])
                 mappings[-1] += node.generate_mapping()
                 node.values = None
                 return
             for child in node.children:
                 group_mappings(child)
+
         group_mappings(exe_tree.root)
+        self.exe_tree = exe_tree
         self.mapping_ciphers = []
         for mapping in mappings:
             mapping = np.array(mapping, dtype=np.int64)
             self.mapping_ciphers.append(HE.encryptInt(mapping))
+
+    def get_query_type(self):
+        return self.exe_tree.get_query_type()
 
     def serialize_to_json(self):
         return {
@@ -51,10 +55,13 @@ class SecureQuery():
     
     @staticmethod
     def from_dump(secure_query_dump, ciphers_bytes, HE):
-        secure_query_json = json.dumps(secure_query_dump)
+        secure_query_json = json.loads(secure_query_dump)
         secure_query = SecureQuery(exe_tree=ExecutionTree.deserialize_from_json(secure_query_json["exe_tree"]))
         secure_query.mapping_ciphers = []
         for id in secure_query_json["mapping_ciphers"]:
             cipher = PyCtxt(pyfhel=HE).from_bytes(ciphers_bytes[id])
             secure_query.mapping_ciphers.append(cipher)
         return secure_query
+    
+    def process(self, db, HE, debug):
+        return self.exe_tree.root.process(db, self.mapping_ciphers, HE, debug)
