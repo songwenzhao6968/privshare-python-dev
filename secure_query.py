@@ -59,7 +59,8 @@ class SecureQuery():
         secure_query = SecureQuery(exe_tree=ExecutionTree.deserialize_from_json(secure_query_json["exe_tree"]))
         secure_query.mapping_ciphers = []
         for id in secure_query_json["mapping_ciphers"]:
-            cipher = PyCtxt(pyfhel=HE).from_bytes(ciphers_bytes[id])
+            cipher = PyCtxt(pyfhel=HE)
+            cipher.from_bytes(ciphers_bytes[id])
             secure_query.mapping_ciphers.append(cipher)
         return secure_query
     
