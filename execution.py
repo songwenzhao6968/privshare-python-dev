@@ -2,7 +2,7 @@ import json
 from enum import Enum
 import myutil
 from sql_parser import Query, QueryType, Predicate
-from database import DataBase, DataType, Table
+from database import DataType
 import numpy as np
 import he
 
@@ -20,7 +20,12 @@ class NodeType(Enum):
 class ComputationNode():
     def __init__(self, type=None):
         self.type = type
+        self.parent = None
         self.children = []
+
+    def link(self, child):
+        self.children.append(child)
+        child.parent = self
 
     def serialize_to_json(self, expand=True):
         children_json = []
@@ -75,7 +80,7 @@ class ComputationNode():
             )
         if expand:
             for child_json in node_json["children"]:
-                node.children.append(ComputationNode.deserialize_from_json(child_json))
+                node.link(ComputationNode.deserialize_from_json(child_json))
         return node
     
     def dump(self):
@@ -84,7 +89,6 @@ class ComputationNode():
     @staticmethod
     def from_dump(node_dump):
         return ComputationNode.deserialize_from_json(json.loads(node_dump))
-
 
 class ReturnNode(ComputationNode):
     def __init__(self, concerned_table):
@@ -96,8 +100,8 @@ class ReturnNode(ComputationNode):
         ret["concerned_table"] = self.concerned_table
         return ret
     
-    def process(db: DataBase, config):
-        pass
+    def process(self, db, mapping_ciphers, HE, debug):
+        return self.children[0].process(db[self.concerned_table], mapping_ciphers, HE, debug)
 
 class RetrievalNode(ComputationNode):
     def __init__(self, concerned_columns):
@@ -109,8 +113,8 @@ class RetrievalNode(ComputationNode):
         ret["concerned_columns"] = self.concerned_columns
         return ret
     
-    def process(table, config):
-        raise NotImplementedError
+    def process(self, table, mapping_ciphers, HE, debug):
+        return self.children[0].process(table, mapping_ciphers, HE, debug)
 
 class AggregationNode(ComputationNode):
     def __init__(self, agg_type: QueryType, concerned_column):
@@ -124,15 +128,22 @@ class AggregationNode(ComputationNode):
         ret["concerned_column"] = self.concerned_column
         return ret
     
-    def process(table, config):
-        pass
+    def process(self, table, mapping_ciphers, HE, debug):
+        return self.children[0].process(table, mapping_ciphers, HE, debug)
 
 class AndNode(ComputationNode):
     def __init__(self):
         super().__init__(NodeType.AND)
     
-    def process(table, config):
-        pass
+    def process(self, table, mapping_ciphers, HE, debug):
+        ind_ciphers_a = self.children[0].process(table, mapping_ciphers, HE, debug)
+        ind_ciphers_b = self.children[1].process(table, mapping_ciphers, HE, debug)
+        ind_ciphers = []
+        for ind_cipher_a, ind_cipher_b in zip(ind_ciphers_a, ind_ciphers_b):
+            ind_cipher_a *= ind_cipher_b
+            ~ind_cipher_a
+            ind_ciphers.append(ind_cipher_a)
+        return ind_ciphers
 
 class OrNode(ComputationNode):
     def __init__(self):
@@ -142,8 +153,12 @@ class NotNode(ComputationNode):
     def __init__(self):
         super().__init__(NodeType.NOT)
     
-    def process():
-        pass
+    def process(self, table, mapping_ciphers, HE, debug):
+        ind_ciphers = self.children[0].process(table, mapping_ciphers, HE, debug)
+        for ind_cipher in ind_ciphers:
+            ind_cipher = HE.negate(ind_cipher, False)
+            ind_cipher += HE.encodeInt(np.ones(HE.n, dtype=np.int64))
+        return ind_ciphers
 
 class EqualNode(ComputationNode):
     def __init__(self, concerned_column, value, schema=None,
@@ -156,6 +171,7 @@ class EqualNode(ComputationNode):
             self.need_str_to_uint_conversion = need_str_to_uint_conversion
             self.value = value
             return
+        self.concerned_column = concerned_column
         dtype = schema.get_type(concerned_column)
         temp = { # DataType: (bit_width, need_int_to_uint_conversion, need_str_to_uint_conversion)
             DataType.UINT8: (8, False, False),
@@ -166,7 +182,7 @@ class EqualNode(ComputationNode):
             DataType.INT32: (32, True, False),
             DataType.STR: (32, False, True),
         }
-        self.bit_width, self.need_int_to_uint_conversion, self.need_str_to_uint_conversion = temp(dtype)
+        self.bit_width, self.need_int_to_uint_conversion, self.need_str_to_uint_conversion = temp[dtype]
         if self.need_str_to_uint_conversion:
             self.value = myutil.str_to_uint(value)
         elif self.need_int_to_uint_conversion:
@@ -204,7 +220,7 @@ class RangeNode(ComputationNode):
             DataType.INT16: (16, True),
             DataType.INT32: (32, True),
         }
-        self.bit_width, self.need_int_to_uint_conversion = temp(dtype)
+        self.bit_width, self.need_int_to_uint_conversion = temp[dtype]
         if self.need_int_to_uint_conversion:
             value = myutil.int_to_uint(value)
         _min, _max = 0, (1 << self.bit_width) - 1
@@ -214,7 +230,7 @@ class RangeNode(ComputationNode):
             ">": (value+1, _max),
             ">=": (value, _max)
         } # Potential bug here: <0, >_max
-        self.value_l, self.value_r = temp(pred_type)
+        self.value_l, self.value_r = temp[pred_type]
 
     def serialize_to_json(self, expand=True):
         ret = super().serialize_to_json(expand)
@@ -224,6 +240,9 @@ class RangeNode(ComputationNode):
         ret["value_l"] = self.value_l
         ret["value_r"] = self.value_r
         return ret
+    
+    def process(self, table, mapping_ciphers, HE, debug):
+        raise NotImplementedError
         
 class MatchBitsNode(ComputationNode):
     bit_width = 8
@@ -247,6 +266,7 @@ class MatchBitsNode(ComputationNode):
             offset = offset
         )
         node_mb.values = [(node_eq.value >> offset) & ((1 << MatchBitsNode.bit_width) - 1)]
+        return node_mb
 
     @staticmethod
     def range_decompose(node_rg: RangeNode, offset, params):
@@ -269,10 +289,11 @@ class MatchBitsNode(ComputationNode):
         ret["mapping_cipher_offset"] = self.mapping_cipher_offset
         return ret
     
-    def process(self, table: Table, HE, config):
+    def process(self, table, mapping_ciphers, HE, debug):
+        ind_ciphers = []
         concerned_column_id = table.schema.get_id(self.concerned_column)
         column = []
-        for record in table.data:
+        for i, record in enumerate(table.data):
             value = record[concerned_column_id]
             if self.need_str_to_uint_conversion:
                 value = myutil.str_to_uint(value)
@@ -282,15 +303,20 @@ class MatchBitsNode(ComputationNode):
             column.append(value)
             if len(column) == HE.n:
                 x = np.array(column, dtype=np.int64)
-                apply_elementwise_mapping()
-
-            
-
-        
+                y = he.apply_elementwise_mapping(mapping_ciphers[self.mapping_cipher_id], self.mapping_cipher_offset, 
+                                             MatchBitsNode.bit_width, x, HE)
+                ind_ciphers.append(y)
+                column = []
+        if column:
+            x = np.array(column, dtype=np.int64)
+            y = he.apply_elementwise_mapping(mapping_ciphers[self.mapping_cipher_id], self.mapping_cipher_offset, 
+                                             MatchBitsNode.bit_width, x, HE)
+            ind_ciphers.append(y)
+        return ind_ciphers
 
 class ExecutionTree():
     def __init__(self, query: Query=None, schema=None, root=None):
-        if self.query == None:
+        if query == None:
             self.root = root
             return
         self.root = ReturnNode(query.concerned_table)
@@ -298,7 +324,7 @@ class ExecutionTree():
             node_op = RetrievalNode(query.concerned_column)
         elif query.is_aggregate():
             node_op = AggregationNode(query.type, query.concerned_column)
-        self.root.children.append(node_op)
+        self.root.link(node_op)
 
         def add_predicates(pred: Predicate, schema):
             if pred.type == "AND":
@@ -310,29 +336,28 @@ class ExecutionTree():
             elif pred.type == "!=":
                 node_eq = EqualNode(pred.concerned_column, pred.value, schema)
                 node = NotNode()
-                node.children.append(node_eq)
+                node.link(node_eq)
             elif pred.type in ["<", "<=", ">", ">="]:
                 node = RangeNode(pred.concerned_column, pred.value, schema, pred.type)
             if not pred.is_leaf:
-                node.children = [add_predicates(pred.left_child, schema),
-                                add_predicates(pred.right_child, schema),]
+                node.link(add_predicates(pred.left_child, schema))
+                node.link(add_predicates(pred.right_child, schema))
             return node
-        node_op.children.append(add_predicates(query.pred, schema))
+        
+        node_op.link(add_predicates(query.pred, schema))
     
     def get_query_type(self):
-        if self.root.children[0].type == NodeType.RETRIEVAL:
+        if self.root.type == NodeType.RETRIEVAL:
             return QueryType.RETRIEVE
-        elif self.root.children[0].type == NodeType.AGGREGATION:
-            return self.children[0].agg_type
+        elif self.root.type == NodeType.AGGREGATION:
+            return self.root.agg_type
     
     def serialize_to_json(self):
         return {"root": self.root.serialize_to_json()}
     
     @staticmethod
     def deserialize_from_json(exe_tree_json):
-        return ExecutionTree(
-            root = ComputationNode.deserialize_from_json(exe_tree_json["root"])
-            )
+        return ExecutionTree(root=ComputationNode.deserialize_from_json(exe_tree_json["root"]))
     
     def dump(self):
         return json.dumps(self.serialize_to_json())
