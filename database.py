@@ -16,10 +16,10 @@ class Schema:
         self.key = key
 
     def get_id(self, name):
-        return dict[name][0]
+        return self.fields[name][0]
     
     def get_type(self, name):
-        return dict[name][1]
+        return self.fields[name][1]
 
     def serialize_to_json(self):
         fields = [None] * len(self.fields)
