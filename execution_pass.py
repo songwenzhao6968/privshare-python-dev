@@ -1,4 +1,4 @@
-from execution import AndNode, NotNode, MatchBitsNode, NodeType
+from execution import AndNode, OrNode, NotNode, MatchBitsNode, NodeType
 
 class Pass:
     @staticmethod
@@ -55,4 +55,31 @@ class Pass:
 
     @staticmethod
     def decompose_range(exe_tree):
-        raise NotImplementedError
+        def rewrite_range_node(node):
+            if node.type == NodeType.RANGE:
+                if node.bit_width == 8:
+                    node_mb = MatchBitsNode.range_decompose(node, 0, False, True, True)
+                    return node_mb
+                elif node.bit_width == 16:
+                    _min, _max = 0, (1 << node.bit_width) - 1
+                    if node.value_l == _min: # Right side  
+                        node_mb0 = MatchBitsNode.range_decompose(node, 8, False, False, True, False, True)
+                        node_mb1 = MatchBitsNode.range_decompose(node, 8, True, False, True)
+                        node_mb2 = MatchBitsNode.range_decompose(node, 0, False, False, True, False, False)
+                        node_and = AndNode()
+                        node_or = OrNode()
+                        node_and.link(node_mb1); node_and.link(node_mb2)
+                        node_or.link(node_and, node_mb0)
+                        return node_or
+                    else:
+                        raise NotImplementedError
+                elif node.bit_width == 32:
+                    raise NotImplementedError
+            children = node.children
+            node.children = []
+            for child in children:
+                node.link(rewrite_range_node(child))
+            return node
+        
+        exe_tree.root = rewrite_range_node(exe_tree.root)
+        return exe_tree

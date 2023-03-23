@@ -1,15 +1,18 @@
-HE Operation - Plaintext add (per record): 0.13µs
-HE Operation - Ciphertext add (per record): 0.11µs
-HE Operation - Plaintext mul (per record): 0.04µs
-HE Operation - Ciphertext mul (per record): 4.87µs
+HE Operation - Plaintext Add (per record): 0.13µs
+HE Operation - Ciphertext Add (per record): 0.11µs
+HE Operation - Plaintext Mul (per record): 0.04µs
+HE Operation - Ciphertext Mul (per record): 4.87µs
 HE Operation - Relinearization (per record): 1.80µs
 HE Operation - Rotation (per record): 1.89µs
-Secure Query Construction - Transformation: 172.30µs
-Secure Query Construction - Encryption: 16805.67µs
-Secure Query Execution - BASIC (per record): 530.13µs
-Secure Query Execution - BASIC (per record): 518.55µs
+Secure Query Construction - Transformation: 224.50µs
+Secure Query Construction - Encryption: 16704.77µs
+Secure Query Execution - BASIC (per record): 534.44µs
+Secure Query Execution - BASIC (per record): 520.59µs
 Secure Query Execution - AND (per record): 6.47µs
-Secure Query Execution - BASIC (per record): 514.00µs
-Secure Query Execution - BASIC (per record): 517.23µs
-Secure Query Execution - AND (per record): 6.20µs
-Secure Query Execution - AND (per record): 6.08µs
+Secure Query Execution - BASIC (per record): 519.08µs
+Secure Query Execution - BASIC (per record): 520.82µs
+Secure Query Execution - AND (per record): 6.27µs
+Secure Query Execution - AND (per record): 6.09µs
+Secure Query Execution - BASIC (per record): 485.86µs
+Secure Query Execution - AND (per record): 6.15µs
+Secure Query Execution - Indicator Vector Gen (per record): 2605.78µs

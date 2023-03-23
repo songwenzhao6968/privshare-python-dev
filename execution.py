@@ -20,12 +20,15 @@ class NodeType(Enum):
 class ComputationNode():
     def __init__(self, type=None):
         self.type = type
-        self.parent = None
+        self.parent = []
         self.children = []
 
-    def link(self, child):
+    def link(self, child, reset_parent=True):
         self.children.append(child)
-        child.parent = self
+        if reset_parent: 
+            child.parent = [self]
+        else:
+            child.parent.append(self)
 
     def serialize_to_json(self, expand=True):
         children_json = []
@@ -129,7 +132,10 @@ class AggregationNode(ComputationNode):
         return ret
     
     def process(self, table, mapping_ciphers, HE, debug):
-        return self.children[0].process(table, mapping_ciphers, HE, debug)
+        myutil.record_time("Secure Query Execution - Indicator Vector Gen (per record)", 0)
+        ind_ciphers = self.children[0].process(table, mapping_ciphers, HE, debug)
+        myutil.record_time("Secure Query Execution - Indicator Vector Gen (per record)", 1, len(ind_ciphers)*HE.n)
+        return ind_ciphers
 
 class AndNode(ComputationNode):
     def __init__(self):
@@ -220,6 +226,7 @@ class RangeNode(ComputationNode):
             return
         self.concerned_column = concerned_column
         dtype = schema.get_type(concerned_column)
+        assert dtype != DataType.STR
         temp = { # DataType: (bit_width, need_int_to_uint_conversion)
             DataType.UINT8: (8, False),
             DataType.UINT16: (16, False),
@@ -237,7 +244,7 @@ class RangeNode(ComputationNode):
             "<=": (_min, value),
             ">": (value+1, _max),
             ">=": (value, _max)
-        } # Potential bug here: <0, >_max
+        }
         self.value_l, self.value_r = temp[pred_type]
 
     def serialize_to_json(self, expand=True):
@@ -261,6 +268,7 @@ class MatchBitsNode(ComputationNode):
         self.values = values
         self.mapping_cipher_id = mapping_cipher_id
         self.mapping_cipher_offset = mapping_cipher_offset
+        self.ind_ciphers = None
 
     @staticmethod
     def equal_decompose(node_eq: EqualNode, offset):
@@ -274,8 +282,29 @@ class MatchBitsNode(ComputationNode):
         return node_mb
 
     @staticmethod
-    def range_decompose(node_rg: RangeNode, offset, params):
-        raise NotImplementedError
+    def range_decompose(node_rg: RangeNode, offset, is_equal, keep_left, keep_right, is_left_strict=False, is_right_strict=False):
+        node_mb = MatchBitsNode(
+            need_int_to_uint_conversion = node_rg.need_int_to_uint_conversion,
+            need_str_to_uint_conversion = False, 
+            concerned_column = node_rg.concerned_column,
+            offset = offset
+        )
+        if is_equal:
+            value = node_rg.value_l if keep_left else node_rg.value_r
+            node_mb.values = [(value >> offset) & ((1 << MatchBitsNode.bit_width) - 1)]
+        else:
+            _min, _max = 0, (1 << node_rg.bit_width) - 1
+            if keep_left:
+                value_l = node_rg.value_l+1 if is_left_strict else node_rg.value_l
+            else:
+                value_l = _min
+            if keep_right:
+                value_r = node_rg.value_r-1 if is_right_strict else node_rg.value_r
+            else:
+                value_r = _max
+            node_mb.values = [(value >> offset) & ((1 << MatchBitsNode.bit_width) - 1)
+                              for value in range(value_l, value_r+1)]
+        return node_mb
 
     def generate_mapping(self):
         mapping = [0] * (1 << MatchBitsNode.bit_width)
@@ -295,6 +324,8 @@ class MatchBitsNode(ComputationNode):
         return ret
     
     def process(self, table, mapping_ciphers, HE, debug):
+        if self.ind_ciphers != None:
+            return he.copy_cipher_list(self.ind_ciphers)
         if debug["timing"]: 
             myutil.record_time("Secure Query Execution - BASIC (per record)", 0)
         ind_ciphers = []
@@ -321,6 +352,8 @@ class MatchBitsNode(ComputationNode):
             ind_ciphers.append(y)
         if debug["timing"]: 
             myutil.record_time("Secure Query Execution - BASIC (per record)", 1, len(ind_ciphers)*HE.n)
+        if len(self.parent) > 1:
+            self.ind_ciphers = he.copy_cipher_list(ind_ciphers) # For reusing
         return ind_ciphers
 
 class ExecutionTree():
