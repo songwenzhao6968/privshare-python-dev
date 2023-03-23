@@ -37,12 +37,12 @@ def sum_cipher(cipher, HE):
         cipher += HE.rotate(cipher, 1<<i, True)
     return cipher
 
-def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width, x, HE):
+def apply_elementwise_mapping(mapping_cipher, mapping_offset, mapping_bit_width, x, HE): # Note that mapping_cipher can't be modified inplace
     n_bits, mapping_width = int(np.log2(HE.n)), 1 << mapping_bit_width
     # Mask out other mappings in the ciphertext
     mask = np.zeros(HE.n, dtype=np.int64)
     mask[mapping_offset:mapping_offset+mapping_width] = 1
-    mapping_cipher *= HE.encodeInt(mask)
+    mapping_cipher = mapping_cipher * HE.encodeInt(mask)
     # Repeat the mapping to fill up the ciphertext
     mapping_cipher += HE.flip(mapping_cipher, True)
     for i in range(n_bits-2, mapping_bit_width-1, -1):
