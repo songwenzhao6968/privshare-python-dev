@@ -101,13 +101,11 @@ class Predicate:
     
 class QueryType(Enum):
     RETRIEVE = "retrieve"
-    AGGREGATE_ = "aggregate_"
     AGGREGATE_EXIST = "aggregate_exist"
     AGGREGATE_CNT = "aggregate_count"
     AGGREGATE_SUM = "aggregate_sum"
     AGGREGATE_AVG = "aggregate_average"
     AGGREGATE_CNT_UNQ = "aggregate_count_unique"
-    AGGREGATE__ = "aggregate__"
 
 class Query:
     def __init__(self, sql=None, type=None, concerned_column=None, concerned_table=None, pred=None):
@@ -169,8 +167,7 @@ class Query:
         return self.type == QueryType.RETRIEVE
 
     def is_aggregate(self):
-        return (QueryType.AGGREGATE_.value < self.type.value and 
-            self.type.value < QueryType.AGGREGATE__.value)
+        return self.type.value.find("aggregate") != -1
     
     def serialize_to_json(self):
         return {
