@@ -392,7 +392,7 @@ class ExecutionTree():
         if self.root.type == NodeType.RETRIEVAL:
             return QueryType.RETRIEVE
         elif self.root.type == NodeType.AGGREGATION:
-            return self.root.agg_type
+            return self.root.children[0].agg_type
     
     def serialize_to_json(self):
         return {"root": self.root.serialize_to_json()}
