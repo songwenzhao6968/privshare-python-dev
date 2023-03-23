@@ -73,6 +73,7 @@ class DataBase:
             ret[table_name] = table.serialize_to_json()
         return ret
     
+    @staticmethod
     def deserialize_from_json(db_json):
         tables = {}
         for table_name, table_json in db_json.items():
