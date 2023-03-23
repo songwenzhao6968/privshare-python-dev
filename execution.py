@@ -271,7 +271,7 @@ class MatchBitsNode(ComputationNode):
         self.ind_ciphers = None
 
     @staticmethod
-    def equal_decompose(node_eq: EqualNode, offset):
+    def decompose_equal(node_eq: EqualNode, offset):
         node_mb = MatchBitsNode(
             need_int_to_uint_conversion = node_eq.need_int_to_uint_conversion,
             need_str_to_uint_conversion = node_eq.need_str_to_uint_conversion,
@@ -282,7 +282,7 @@ class MatchBitsNode(ComputationNode):
         return node_mb
 
     @staticmethod
-    def range_decompose(node_rg: RangeNode, offset, is_equal, keep_left, keep_right, is_left_strict=False, is_right_strict=False):
+    def decompose_range(node_rg: RangeNode, offset, is_equal, keep_left, keep_right, is_left_strict=False, is_right_strict=False):
         node_mb = MatchBitsNode(
             need_int_to_uint_conversion = node_rg.need_int_to_uint_conversion,
             need_str_to_uint_conversion = False, 
