@@ -5,9 +5,6 @@ from secure_query import SecureQuery
 import numpy as np
 import he
 
-def run_secure_query(db: DataBase, secure_query: SecureQuery):
-    pass
-
 config_dir = "./examples/demo/config.json"
 with open(config_dir) as f:
     config = json.load(f)
