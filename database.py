@@ -89,6 +89,5 @@ class DataBase:
 if __name__ == "__main__":
     # Test
     with open("./examples/demo/provider_1/db.json") as f:
-        db_json = json.load(f)
-    db = DataBase.deserialize_from_json(db_json)
+        db = DataBase.deserialize_from_json(json.load(f)) 
     print(json.dumps(db.serialize_to_json()))
