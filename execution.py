@@ -132,9 +132,9 @@ class AggregationNode(ComputationNode):
         return ret
     
     def process(self, table, mapping_ciphers, HE, debug):
-        myutil.record_time("Secure Query Execution - Indicator Vector Gen (per record)", 0)
+        myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 0)
         ind_ciphers = self.children[0].process(table, mapping_ciphers, HE, debug)
-        myutil.record_time("Secure Query Execution - Indicator Vector Gen (per record)", 1, len(ind_ciphers)*HE.n)
+        myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 1, len(ind_ciphers)*HE.n)
         return ind_ciphers
 
 class AndNode(ComputationNode):
@@ -145,14 +145,14 @@ class AndNode(ComputationNode):
         ind_ciphers_a = self.children[0].process(table, mapping_ciphers, HE, debug)
         ind_ciphers_b = self.children[1].process(table, mapping_ciphers, HE, debug)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - AND (per record)", 0)
+            myutil.report_time("Secure Query Execution - AND (per record)", 0)
         ind_ciphers = []
         for ind_cipher_a, ind_cipher_b in zip(ind_ciphers_a, ind_ciphers_b):
             ind_cipher_a *= ind_cipher_b
             ~ind_cipher_a
             ind_ciphers.append(ind_cipher_a)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - AND (per record)", 1, len(ind_ciphers)*HE.n)
+            myutil.report_time("Secure Query Execution - AND (per record)", 1, len(ind_ciphers)*HE.n)
         return ind_ciphers
 
 class OrNode(ComputationNode):
@@ -166,12 +166,12 @@ class NotNode(ComputationNode):
     def process(self, table, mapping_ciphers, HE, debug):
         ind_ciphers = self.children[0].process(table, mapping_ciphers, HE, debug)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - NOT (per record)", 0)
+            myutil.report_time("Secure Query Execution - NOT (per record)", 0)
         for ind_cipher in ind_ciphers:
             ind_cipher = HE.negate(ind_cipher, False)
             ind_cipher += HE.encodeInt(np.ones(HE.n, dtype=np.int64))
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - NOT (per record)", 1, len(ind_ciphers)*HE.n)
+            myutil.report_time("Secure Query Execution - NOT (per record)", 1, len(ind_ciphers)*HE.n)
         return ind_ciphers
 
 class EqualNode(ComputationNode):
@@ -327,7 +327,7 @@ class MatchBitsNode(ComputationNode):
         if self.ind_ciphers != None:
             return he.copy_cipher_list(self.ind_ciphers)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - BASIC (per record)", 0)
+            myutil.report_time("Secure Query Execution - BASIC (per record)", 0)
         ind_ciphers = []
         concerned_column_id = table.schema.get_id(self.concerned_column)
         column = []
@@ -351,7 +351,7 @@ class MatchBitsNode(ComputationNode):
                                              MatchBitsNode.bit_width, x, HE)
             ind_ciphers.append(y)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Execution - BASIC (per record)", 1, len(ind_ciphers)*HE.n)
+            myutil.report_time("Secure Query Execution - BASIC (per record)", 1, len(ind_ciphers)*HE.n)
         if len(self.parent) > 1:
             self.ind_ciphers = he.copy_cipher_list(ind_ciphers) # For reusing
         return ind_ciphers

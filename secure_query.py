@@ -15,17 +15,17 @@ class SecureQuery():
             return
         # Run Pass to transform the execution tree
         if debug["timing"]: 
-            myutil.record_time("Secure Query Construction - Transformation", 0)
+            myutil.report_time("Secure Query Construction - Transformation", 0)
         assert MatchBitsNode.bit_width == config["basic_block_bit_width"]
         exe_tree = ExecutionTree(query, schema)
         exe_tree = Pass.decompose_equal(exe_tree)
         exe_tree = Pass.decompose_range(exe_tree)
         exe_tree = Pass.remove_or(exe_tree)
         if debug["timing"]: 
-            myutil.record_time("Secure Query Construction - Transformation", 1)
+            myutil.report_time("Secure Query Construction - Transformation", 1)
         # Encrypt the execution tree
         if debug["timing"]: 
-            myutil.record_time("Secure Query Construction - Encryption", 0)
+            myutil.report_time("Secure Query Construction - Encryption", 0)
         mappings = []
         def group_mappings(node):
             if node.type == NodeType.BASIC:
@@ -46,7 +46,7 @@ class SecureQuery():
             mapping = np.array(mapping, dtype=np.int64)
             self.mapping_ciphers.append(HE.encryptInt(mapping))
         if debug["timing"]: 
-            myutil.record_time("Secure Query Construction - Encryption", 1)
+            myutil.report_time("Secure Query Construction - Encryption", 1)
 
     def get_query_type(self):
         return self.exe_tree.get_query_type()

@@ -14,7 +14,7 @@ def str_to_uint(str):
 
 timestamps = {}
 event_times = []
-def record_time(event_name, is_end, per_n=1, output_event_time=False):
+def report_time(event_name, is_end, per_n=1, output_event_time=False):
     timestamps[(event_name, is_end)] = time.process_time_ns()
     if is_end:
         event_time = (timestamps[(event_name, 1)] - timestamps[(event_name, 0)])/1e3/per_n
@@ -22,8 +22,8 @@ def record_time(event_name, is_end, per_n=1, output_event_time=False):
         if output_event_time:
             print("{0}: {1:.2f}µs".format(event_name, event_time))       
 
-def report_event_times():
-    with open("time.txt", "a") as f:
+def write_event_times():
+    with open("running_time.txt", "w") as f:
         for event_name, event_time in event_times:
             f.write("{0}: {1:.2f}µs\n".format(event_name, event_time))   
             

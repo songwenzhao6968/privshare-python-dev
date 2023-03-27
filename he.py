@@ -120,22 +120,22 @@ if __name__ == "__main__":
         ptxt2 = HE.encodeInt(arr2)
         ctxt1 = HE.encryptPtxt(ptxt1)
         ctxt2 = HE.encryptPtxt(ptxt2)
-        myutil.record_time("HE Operation - Plaintext Add (per record)", 0)
+        myutil.report_time("HE Operation - Plaintext Add (per record)", 0)
         ctxt3 = ctxt1 + ptxt2
-        myutil.record_time("HE Operation - Plaintext Add (per record)", 1, HE.n)
-        myutil.record_time("HE Operation - Ciphertext Add (per record)", 0)
+        myutil.report_time("HE Operation - Plaintext Add (per record)", 1, HE.n)
+        myutil.report_time("HE Operation - Ciphertext Add (per record)", 0)
         ctxt3 = ctxt1 + ctxt2
-        myutil.record_time("HE Operation - Ciphertext Add (per record)", 1, HE.n)
-        myutil.record_time("HE Operation - Plaintext Mul (per record)", 0)
+        myutil.report_time("HE Operation - Ciphertext Add (per record)", 1, HE.n)
+        myutil.report_time("HE Operation - Plaintext Mul (per record)", 0)
         ctxt3 = ctxt1 * ptxt2
-        myutil.record_time("HE Operation - Plaintext Mul (per record)", 1, HE.n)
-        myutil.record_time("HE Operation - Ciphertext Mul (per record)", 0)
+        myutil.report_time("HE Operation - Plaintext Mul (per record)", 1, HE.n)
+        myutil.report_time("HE Operation - Ciphertext Mul (per record)", 0)
         ctxt3 = ctxt1 * ctxt2
-        myutil.record_time("HE Operation - Ciphertext Mul (per record)", 1, HE.n)
-        myutil.record_time("HE Operation - Relinearization (per record)", 0)
+        myutil.report_time("HE Operation - Ciphertext Mul (per record)", 1, HE.n)
+        myutil.report_time("HE Operation - Relinearization (per record)", 0)
         ~ctxt3
-        myutil.record_time("HE Operation - Relinearization (per record)", 1, HE.n)
-        myutil.record_time("HE Operation - Rotation (per record)", 0)
+        myutil.report_time("HE Operation - Relinearization (per record)", 1, HE.n)
+        myutil.report_time("HE Operation - Rotation (per record)", 0)
         ctxt3 = ctxt3 << 2
-        myutil.record_time("HE Operation - Rotation (per record)", 1, HE.n)
-        myutil.report_event_times()
+        myutil.report_time("HE Operation - Rotation (per record)", 1, HE.n)
+        myutil.write_event_times()

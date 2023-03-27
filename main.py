@@ -37,4 +37,4 @@ ind = HE.decryptInt(secure_result[0])
 print("Result rows:", ind.nonzero())
 
 if debug["timing"]:
-    myutil.report_event_times()
+    myutil.write_event_times()

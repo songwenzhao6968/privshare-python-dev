@@ -1,0 +1,12 @@
+Secure Query Construction - Transformation: 196.87µs
+Secure Query Construction - Encryption: 16689.40µs
+Secure Query Execution - BASIC (per record): 529.56µs
+Secure Query Execution - BASIC (per record): 516.04µs
+Secure Query Execution - AND (per record): 6.48µs
+Secure Query Execution - BASIC (per record): 515.03µs
+Secure Query Execution - BASIC (per record): 517.25µs
+Secure Query Execution - AND (per record): 6.23µs
+Secure Query Execution - AND (per record): 6.12µs
+Secure Query Execution - BASIC (per record): 486.73µs
+Secure Query Execution - AND (per record): 6.18µs
+Secure Query Execution - Indicator Vector Gen (per record): 2589.63µs
