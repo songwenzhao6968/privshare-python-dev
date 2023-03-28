@@ -62,17 +62,26 @@ class Pass:
                     return node_mb
                 elif node.bit_width == 16:
                     _min, _max = 0, (1 << node.bit_width) - 1
-                    if node.value_l == _min: # Right side  
+                    if node.value_l == _min: # Right-side  
                         node_mb0 = MatchBitsNode.decompose_range(node, 8, False, False, True, False, True)
                         node_mb1 = MatchBitsNode.decompose_range(node, 8, True, False, True)
                         node_mb2 = MatchBitsNode.decompose_range(node, 0, False, False, True, False, False)
                         node_and = AndNode()
                         node_or = OrNode()
                         node_and.link(node_mb1); node_and.link(node_mb2)
-                        node_or.link(node_and, node_mb0)
+                        node_or.link(node_and); node_or.link(node_mb0)
+                        return node_or
+                    elif node.value_r == _max: # Left-side
+                        node_mb0 = MatchBitsNode.decompose_range(node, 8, False, True, False, True, False)
+                        node_mb1 = MatchBitsNode.decompose_range(node, 8, True, True, False)
+                        node_mb2 = MatchBitsNode.decompose_range(node, 0, False, True, False, False, False)
+                        node_and = AndNode()
+                        node_or = OrNode()
+                        node_and.link(node_mb1); node_and.link(node_mb2)
+                        node_or.link(node_and); node_or.link(node_mb0)
                         return node_or
                     else:
-                        raise NotImplementedError
+                        raise NotImplementedError # Double-side
                 elif node.bit_width == 32:
                     raise NotImplementedError
             children = node.children
@@ -83,3 +92,6 @@ class Pass:
         
         exe_tree.root = rewrite_range_node(exe_tree.root)
         return exe_tree
+    
+    # Later: pre-expansion optimization
+    # Later: post-expansion optimization

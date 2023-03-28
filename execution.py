@@ -159,6 +159,22 @@ class OrNode(ComputationNode):
     def __init__(self):
         super().__init__(NodeType.OR)
 
+    def process(self, table, mapping_ciphers, HE, debug):
+        ind_ciphers_a = self.children[0].process(table, mapping_ciphers, HE, debug)
+        ind_ciphers_b = self.children[1].process(table, mapping_ciphers, HE, debug)
+        if debug["timing"]: 
+            myutil.report_time("Secure Query Execution - OR (per record)", 0)
+        ind_ciphers = []
+        for ind_cipher_a, ind_cipher_b in zip(ind_ciphers_a, ind_ciphers_b):
+            ind_cipher_c = ind_cipher_a * ind_cipher_b
+            ~ind_cipher_c
+            ind_cipher_a += ind_cipher_b
+            ind_cipher_a -= ind_cipher_c
+            ind_ciphers.append(ind_cipher_a)
+        if debug["timing"]: 
+            myutil.report_time("Secure Query Execution - OR (per record)", 1, len(ind_ciphers)*HE.n)
+        return ind_ciphers
+
 class NotNode(ComputationNode):
     def __init__(self):
         super().__init__(NodeType.NOT)
@@ -297,10 +313,13 @@ class MatchBitsNode(ComputationNode):
             value_l = node_rg.value_l if keep_left else _min
             value_r = node_rg.value_r if keep_right else _max
             if value_l <= value_r: 
-                value_l = (value_l >> offset) + 1 if is_left_strict else value_l >> offset
-                value_r = (value_r >> offset) - 1 if is_right_strict else value_r >> offset
-                node_mb.values = [value & ((1 << MatchBitsNode.bit_width) - 1)
-                                for value in range(value_l, value_r+1)]
+                value_l = (value_l >> offset) & ((1 << MatchBitsNode.bit_width) - 1)
+                if is_left_strict:
+                    value_l += 1
+                value_r = (value_r >> offset) & ((1 << MatchBitsNode.bit_width) - 1)
+                if is_right_strict:
+                    value_r -= 1
+                node_mb.values = [value for value in range(value_l, value_r+1)]
             else:
                 node_mb.values = []
         return node_mb
