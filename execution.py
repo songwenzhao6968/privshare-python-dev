@@ -294,16 +294,15 @@ class MatchBitsNode(ComputationNode):
             node_mb.values = [(value >> offset) & ((1 << MatchBitsNode.bit_width) - 1)]
         else:
             _min, _max = 0, (1 << node_rg.bit_width) - 1
-            if keep_left:
-                value_l = node_rg.value_l+1 if is_left_strict else node_rg.value_l
+            value_l = node_rg.value_l if keep_left else _min
+            value_r = node_rg.value_r if keep_right else _max
+            if value_l <= value_r: 
+                value_l = (value_l >> offset) + 1 if is_left_strict else value_l >> offset
+                value_r = (value_r >> offset) - 1 if is_right_strict else value_r >> offset
+                node_mb.values = [value & ((1 << MatchBitsNode.bit_width) - 1)
+                                for value in range(value_l, value_r+1)]
             else:
-                value_l = _min
-            if keep_right:
-                value_r = node_rg.value_r-1 if is_right_strict else node_rg.value_r
-            else:
-                value_r = _max
-            node_mb.values = [(value >> offset) & ((1 << MatchBitsNode.bit_width) - 1)
-                              for value in range(value_l, value_r+1)]
+                node_mb.values = []
         return node_mb
 
     def generate_mapping(self):
