@@ -1,29 +1,77 @@
 from execution import AndNode, OrNode, NotNode, MatchBitsNode, NodeType
 
 class Pass:
+    # Pre-expansion optimization
+    @staticmethod
+    def merge_range(exe_tree):
+        """
+        Merge the following:
+            intersect and: [1, 5] and [3, 8] -> [3, 5]
+            intersect or: [5, 7] or [2, 6] -> [2, 7]
+            or with two edges: [min, 4] or [7, max] -> not [5, 6]
+            (stupid queries like "[1, 3] and [6, 8]" are not considered at all)
+        """
+        def rewrite_node(node):
+            if node.type == NodeType.AND:
+                left_child = rewrite_node(node.children[0])
+                right_child = rewrite_node(node.children[1])
+                if (left_child.type == NodeType.RANGE and right_child.type == NodeType.RANGE and 
+                    left_child.concerned_column == right_child.concerned_column and
+                    left_child.value_r >= right_child.value_l and right_child.value_r >= left_child.value_l):
+                    left_child.value_l = max(left_child.value_l, right_child.value_l)
+                    left_child.value_r = min(left_child.value_r, right_child.value_r)
+                    return left_child
+                return node
+            elif node.type == NodeType.OR:
+                left_child = rewrite_node(node.children[0])
+                right_child = rewrite_node(node.children[1])
+                if (left_child.type == NodeType.RANGE and right_child.type == NodeType.RANGE and
+                    left_child.concerned_column == right_child.concerned_column):
+                    if left_child.value_r >= right_child.value_l -1 and right_child.value_r >= left_child.value_l - 1: # Note that [5,8] or [9,12] -> [5,12] is also okay
+                        left_child.value_l = min(left_child.value_l, right_child.value_l)
+                        left_child.value_r = max(left_child.value_r, right_child.value_r)
+                        return left_child
+                    _min, _max = 0, (1 << node.bit_width) - 1
+                    if ((left_child.value_l == _min and right_child.value_r == _max) or
+                        (right_child.value_l == _min and left_child.value_r == _max)):
+                        node_not = NotNode()
+                        value_l = min(left_child.value_r, right_child.value_r) + 1
+                        value_r = max(left_child.valur_l, right_child.value_l) - 1
+                        left_child.value_l, left_child.value_r = value_l, value_r
+                        node_not.link(left_child)
+                        return node_not
+
+            children = node.children
+            node.children = []
+            for child in children:
+                node.link(rewrite_node(child))
+            return node
+        
+    # Later: merge_equal
+
     @staticmethod
     def remove_or(exe_tree):
-        def rewrite_or_node(node):
+        def rewrite_node(node):
             if node.type == NodeType.OR:
                 node_not0, node_not1, node_not2 = NotNode(), NotNode(), NotNode()
                 node_and = AndNode()
                 node_not0.link(node_and)
                 node_and.link(node_not1); node_and.link(node_not2)
-                node_not1.link(rewrite_or_node(node.children[0]))
-                node_not2.link(rewrite_or_node(node.children[1]))
+                node_not1.link(rewrite_node(node.children[0]))
+                node_not2.link(rewrite_node(node.children[1]))
                 return node_not0
             children = node.children
             node.children = []
             for child in children:
-                node.link(rewrite_or_node(child))
+                node.link(rewrite_node(child))
             return node
         
-        exe_tree.root = rewrite_or_node(exe_tree.root)
+        exe_tree.root = rewrite_node(exe_tree.root)
         return exe_tree
     
     @staticmethod
     def decompose_equal(exe_tree):
-        def rewrite_equal_node(node):
+        def rewrite_node(node):
             if node.type == NodeType.EQUAL:
                 if node.bit_width == 8:
                     node_mb = MatchBitsNode.decompose_equal(node, 0)
@@ -47,15 +95,15 @@ class Pass:
             children = node.children
             node.children = []
             for child in children:
-                node.link(rewrite_equal_node(child))
+                node.link(rewrite_node(child))
             return node
         
-        exe_tree.root = rewrite_equal_node(exe_tree.root)
+        exe_tree.root = rewrite_node(exe_tree.root)
         return exe_tree
 
     @staticmethod
     def decompose_range(exe_tree):
-        def rewrite_range_node(node):
+        def rewrite_node(node):
             if node.type == NodeType.RANGE:
                 if node.bit_width == 8:
                     node_mb = MatchBitsNode.decompose_range(node, 0, False, True, True)
@@ -87,11 +135,10 @@ class Pass:
             children = node.children
             node.children = []
             for child in children:
-                node.link(rewrite_range_node(child))
+                node.link(rewrite_node(child))
             return node
         
-        exe_tree.root = rewrite_range_node(exe_tree.root)
+        exe_tree.root = rewrite_node(exe_tree.root)
         return exe_tree
     
-    # Later: pre-expansion optimization
     # Later: post-expansion optimization
