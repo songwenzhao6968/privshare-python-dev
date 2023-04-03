@@ -56,17 +56,29 @@ Directly run `main.py`.
             <td>6.25</td>
         </tr>
         <tr>
-            <td rowspan=4 style="text-align: center">Composition</td>
+            <td rowspan=6 style="text-align: center">Composition</td>
             <td>16-bit equality check</td>
-            <td>664.29</td>
+            <td>1163.70</td>
         </tr>
         <tr>
             <td>16-bit range query (single side)</td>
-            <td>664.29</td>
+            <td>1830.74</td>
         </tr>
         <tr>
-            <td>16-bit range query (single side)</td>
-            <td>664.29</td>
+            <td>16-bit range query (double side)</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>32-bit equality check</td>
+            <td>2526.90</td>
+        </tr>
+        <tr>
+            <td>32-bit range query (single side)</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>32-bit range query (double side)</td>
+            <td></td>
         </tr>
     </tbody>
 </table>

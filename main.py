@@ -11,7 +11,7 @@ with open(config_dir) as f:
 debug = config["debug"]
 
 # Client: Encrypt and send the query to the data provider
-sql = "SELECT SUM(deposit) FROM t_deposit WHERE user_name = \"Alice\" OR id >= 16374"
+sql = "SELECT SUM(deposit) FROM t_deposit WHERE id < 12 OR user_name = \"Alice\""
 query = Query(sql)
 with open(config["tables"][query.concerned_table]["schema_file_loc"]) as f:
     null_data_db = DataBase.deserialize_from_json(json.load(f))

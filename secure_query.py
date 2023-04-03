@@ -74,4 +74,4 @@ class SecureQuery():
         return secure_query
     
     def process(self, db, HE, debug):
-        return self.exe_tree.root.process(db, self.mapping_ciphers, HE, debug)
+        return self.exe_tree.process(db, self.mapping_ciphers, HE, debug)

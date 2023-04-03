@@ -216,7 +216,7 @@ class EqualNode(ComputationNode):
         if self.need_str_to_uint_conversion:
             self.value = myutil.str_to_uint(value)
         elif self.need_int_to_uint_conversion:
-            self.value = myutil.int_to_uint(value)
+            self.value = myutil.int_to_uint(value, self.bit_width)
         else:
             self.value = value
 
@@ -253,7 +253,7 @@ class RangeNode(ComputationNode):
         }
         self.bit_width, self.need_int_to_uint_conversion = temp[dtype]
         if self.need_int_to_uint_conversion:
-            value = myutil.int_to_uint(value)
+            value = myutil.int_to_uint(value, self.bit_width)
         _min, _max = 0, (1 << self.bit_width) - 1
         temp = { # PredicateType: (value_l, value_r)
             "<": (_min, value-1), 
@@ -346,15 +346,21 @@ class MatchBitsNode(ComputationNode):
             return he.copy_cipher_list(self.ind_ciphers)
         if debug["timing"]: 
             myutil.report_time("Secure Query Execution - BASIC (per record)", 0)
-        ind_ciphers = []
         concerned_column_id = table.schema.get_id(self.concerned_column)
-        column = []
-        for i, record in enumerate(table.data):
+        if self.need_int_to_uint_conversion:
+            temp = {
+                DataType.INT8: 8,
+                DataType.INT16: 16,
+                DataType.INT32: 32
+            }
+            concerned_column_bit_width = temp[table.schema.get_type(self.concerned_column)]
+        column, ind_ciphers = [], []
+        for record in table.data:
             value = record[concerned_column_id]
             if self.need_str_to_uint_conversion:
                 value = myutil.str_to_uint(value)
             elif self.need_int_to_uint_conversion:
-                value = myutil.int_to_uint(value)
+                value = myutil.int_to_uint(value, concerned_column_bit_width)
             value = (value >> self.offset) & ((1 << MatchBitsNode.bit_width) - 1)
             column.append(value)
             if len(column) == HE.n:
@@ -425,3 +431,6 @@ class ExecutionTree():
     @staticmethod
     def from_dump(exe_tree_dump):
         return ExecutionTree.deserialize_from_json(json.loads(exe_tree_dump))
+    
+    def process(self, db, mapping_ciphers, HE, debug):
+        return self.root.process(db, mapping_ciphers, HE, debug)
