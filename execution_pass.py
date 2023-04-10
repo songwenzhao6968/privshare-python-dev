@@ -1,3 +1,4 @@
+import myutil
 from execution import AndNode, OrNode, NotNode, MatchBitsNode, NodeType
 
 class Pass:
@@ -31,12 +32,16 @@ class Pass:
                         left_child.value_l = min(left_child.value_l, right_child.value_l)
                         left_child.value_r = max(left_child.value_r, right_child.value_r)
                         return left_child
-                    _min, _max = 0, (1 << node.bit_width) - 1
+                    if left_child.need_int_to_uint_conversion:
+                        _min = myutil.int_to_uint(-1 << (left_child.bit_width - 1))
+                        _max = myutil.int_to_uint((1 << (left_child.bit_width - 1)) - 1)
+                    else:
+                        _min, _max = 0, (1 << left_child.bit_width) - 1
                     if ((left_child.value_l == _min and right_child.value_r == _max) or
                         (right_child.value_l == _min and left_child.value_r == _max)):
                         node_not = NotNode()
                         value_l = min(left_child.value_r, right_child.value_r) + 1
-                        value_r = max(left_child.valur_l, right_child.value_l) - 1
+                        value_r = max(left_child.value_l, right_child.value_l) - 1
                         left_child.value_l, left_child.value_r = value_l, value_r
                         node_not.link(left_child)
                         return node_not

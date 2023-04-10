@@ -1,8 +1,8 @@
 import hashlib
 import time
 
-def int_to_uint(x, bit_width):
-    return x + 2**(bit_width-1)
+def int_to_uint(x):
+    return x + (1 << 64)
   
 def str_to_uint(str):
     # SHA-256 hashing, then use xor to reduce to 32 bits
