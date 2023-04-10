@@ -18,6 +18,7 @@ class SecureQuery():
             myutil.report_time("Secure Query Construction - Transformation", 0)
         assert MatchBitsNode.bit_width == config["basic_block_bit_width"]
         exe_tree = ExecutionTree(query, schema)
+        exe_tree = Pass.merge_range(exe_tree)
         exe_tree = Pass.decompose_equal(exe_tree)
         exe_tree = Pass.decompose_range(exe_tree)
         exe_tree = Pass.remove_or(exe_tree)

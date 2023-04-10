@@ -46,6 +46,9 @@ class Pass:
             for child in children:
                 node.link(rewrite_node(child))
             return node
+    
+        exe_tree.root = rewrite_node(exe_tree.root)
+        return exe_tree
         
     # Later: merge_equal
 
