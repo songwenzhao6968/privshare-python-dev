@@ -3,6 +3,7 @@ from enum import Enum
 import myutil
 from sql_parser import Query, QueryType, Predicate
 from database import DataType
+from secure_query import SecureResult
 import numpy as np
 import he
 
@@ -132,10 +133,18 @@ class AggregationNode(ComputationNode):
         return ret
     
     def process(self, table, mapping_ciphers, HE, debug):
-        myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 0)
+        if debug["timing"]: 
+            myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 0)
         ind_ciphers = self.children[0].process(table, mapping_ciphers, HE, debug)
-        myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 1, len(ind_ciphers)*HE.n)
-        return ind_ciphers
+        if debug["timing"]: 
+            myutil.report_time("Secure Query Execution - Indicator Vector Gen (per record)", 1, len(ind_ciphers)*HE.n)
+            myutil.report_time("Secure Query Execution - Aggregation (per record)", 0)
+        if self.agg_type == QueryType.AGGREGATE_CNT:
+            result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
+            for ind_cipher in ind_ciphers:
+                result_cipher += he.sum_cipher(ind_cipher)
+            SecureResult(result_cipher, 1, debug)
+            return result_cipher
 
 class AndNode(ComputationNode):
     def __init__(self):
@@ -284,7 +293,7 @@ class MatchBitsNode(ComputationNode):
         self.values = values
         self.mapping_cipher_id = mapping_cipher_id
         self.mapping_cipher_offset = mapping_cipher_offset
-        self.ind_ciphers = None
+        self.ind_ciphers = None # May be reused when processing
 
     @staticmethod
     def decompose_equal(node_eq: EqualNode, offset):
@@ -370,7 +379,7 @@ class MatchBitsNode(ComputationNode):
         if debug["timing"]: 
             myutil.report_time("Secure Query Execution - BASIC (per record)", 1, len(ind_ciphers)*HE.n)
         if len(self.parent) > 1:
-            self.ind_ciphers = he.copy_cipher_list(ind_ciphers) # For reusing
+            self.ind_ciphers = he.copy_cipher_list(ind_ciphers)
         return ind_ciphers
 
 class ExecutionTree():
