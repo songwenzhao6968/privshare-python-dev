@@ -180,10 +180,10 @@ class Query:
     @staticmethod
     def deserialize_from_json(query_json):
         return Query(
-            type = QueryType(query_json["type"]),
-            concerned_column = query_json["concerned_column"],
-            concerned_table = query_json["concerned_table"],
-            pred = Predicate.deserialize_from_json(query_json["predicate"])
+            type=QueryType(query_json["type"]),
+            concerned_column=query_json["concerned_column"],
+            concerned_table=query_json["concerned_table"],
+            pred=Predicate.deserialize_from_json(query_json["predicate"])
         )
     
     def dump(self):

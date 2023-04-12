@@ -1,11 +1,11 @@
 import json
 from enum import Enum
 import myutil
+import numpy as np
+import he
 from sql_parser import Query, QueryType, Predicate
 from database import DataType
 from secure_query import SecureResult
-import numpy as np
-import he
 
 class NodeType(Enum):
     RETURN = "return"
@@ -58,29 +58,29 @@ class ComputationNode():
             node = NotNode()
         elif type == NodeType.EQUAL:
             node = EqualNode(
-                concerned_column = node_json["concerned_column"],
-                bit_width = node_json["bit_width"],
-                need_int_to_uint_conversion = node_json["need_int_to_uint_conversion"],
-                need_str_to_uint_conversion = node_json["need_str_to_uint_conversion"],
-                value = node_json["value"],
+                concerned_column=node_json["concerned_column"],
+                bit_width=node_json["bit_width"],
+                need_int_to_uint_conversion=node_json["need_int_to_uint_conversion"],
+                need_str_to_uint_conversion=node_json["need_str_to_uint_conversion"],
+                value=node_json["value"],
             )
         elif type == NodeType.RANGE:
             node = RangeNode(
-                concerned_column = node_json["concerned_column"],
-                bit_width = node_json["bit_width"],
-                need_int_to_uint_conversion = node_json["need_int_to_uint_conversion"],
-                value_l = node_json["value_l"],
-                value_r = node_json["value_r"]
+                concerned_column=node_json["concerned_column"],
+                bit_width=node_json["bit_width"],
+                need_int_to_uint_conversion=node_json["need_int_to_uint_conversion"],
+                value_l=node_json["value_l"],
+                value_r=node_json["value_r"]
             )
         elif type == NodeType.BASIC:
             node = MatchBitsNode(
-                need_int_to_uint_conversion = node_json["need_int_to_uint_conversion"],
-                need_str_to_uint_conversion = node_json["need_str_to_uint_conversion"],
-                concerned_column = node_json["concerned_column"],
-                offset = node_json["offset"],
-                values = node_json["values"],
-                mapping_cipher_id = node_json["mapping_cipher_id"],
-                mapping_cipher_offset = node_json["mapping_cipher_offset"]
+                need_int_to_uint_conversion=node_json["need_int_to_uint_conversion"],
+                need_str_to_uint_conversion=node_json["need_str_to_uint_conversion"],
+                concerned_column=node_json["concerned_column"],
+                offset=node_json["offset"],
+                values=node_json["values"],
+                mapping_cipher_id=node_json["mapping_cipher_id"],
+                mapping_cipher_offset=node_json["mapping_cipher_offset"]
             )
         if expand:
             for child_json in node_json["children"]:
@@ -143,12 +143,48 @@ class AggregationNode(ComputationNode):
             result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
             for ind_cipher in ind_ciphers:
                 result_cipher += he.sum_cipher(ind_cipher, HE)
-            return SecureResult(result_cipher, 1)
-        # elif self.agg_type == QueryType.AGGREGATE_SUM:
-        #     result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
-        #     for ind_cipher in ind_ciphers:
-        #         ind_cipher *= 
-        #         result_cipher += he.sum_cipher(ind_cipher)
+            return SecureResult(1, QueryType.AGGREGATE_CNT, result_cipher)
+        elif self.agg_type == QueryType.AGGREGATE_SUM:
+            concerned_column_id = table.schema.get_id(self.concerned_column)
+            column, columns = [], []
+            for record in table.data:
+                value = record[concerned_column_id]
+                column.append(value)
+                if len(column) == HE.n:
+                    columns.append(np.array(column, dtype=np.int64))
+                    column = []
+            if column:
+                columns.append(np.array(column, dtype=np.int64))
+            result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
+            for ind_cipher, column in zip(ind_ciphers, columns):
+                ind_cipher *= HE.encodeInt(column) # Potential bug here: overflow
+                result_cipher += he.sum_cipher(ind_cipher, HE)
+            return SecureResult(1, QueryType.AGGREGATE_SUM, result_cipher)
+        elif self.agg_type == QueryType.AGGREGATE_AVG:
+            concerned_column_id = table.schema.get_id(self.concerned_column)
+            column, columns = [], []
+            for record in table.data:
+                value = record[concerned_column_id]
+                column.append(value)
+                if len(column) == HE.n:
+                    columns.append(np.array(column, dtype=np.int64))
+                    column = []
+            if column:
+                columns.append(np.array(column, dtype=np.int64))
+            result_cnt_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
+            result_sum_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
+            for ind_cipher, column in zip(ind_ciphers, columns):
+                tmp_cipher = ind_cipher * HE.encodeInt(column)
+                result_cnt_cipher += he.sum_cipher(ind_cipher, HE)
+                result_sum_cipher += he.sum_cipher(tmp_cipher, HE)
+            mask = np.array([1, 0], dtype=np.int64)
+            result_cnt_cipher *= HE.encodeInt(mask)
+            mask = np.array([0, 1], dtype=np.int64)
+            result_sum_cipher *= HE.encodeInt(mask)
+            result_cipher = HE.add(result_sum_cipher, result_cnt_cipher)
+            return SecureResult(2, QueryType.AGGREGATE_AVG, result_cipher)
+        else:
+            raise NotImplementedError
 
 class AndNode(ComputationNode):
     def __init__(self):

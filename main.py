@@ -2,7 +2,7 @@ import json
 import myutil
 from database import DataBase
 from sql_parser import Query
-from secure_query import SecureQuery
+from secure_query import SecureQuery, SecureResult
 import he
 
 config_dir = "./examples/demo/config.json"
@@ -11,7 +11,7 @@ with open(config_dir) as f:
 debug = config["debug"]
 
 # Client: Encrypt and send the query to the data provider
-sql = "SELECT COUNT(*) FROM t_deposit WHERE user_name = \"Alice\""
+sql = "SELECT AVG(amount) FROM t_deposit WHERE user_name = \"Daniel\""
 query = Query(sql)
 with open(config["tables"][query.concerned_table]["schema_file_loc"]) as f:
     null_data_db = DataBase.deserialize_from_json(json.load(f))
@@ -31,8 +31,10 @@ with open(config["servers"]["provider_1"]["database_file_loc"]) as f:
 HE_pub = he.load_public_from_bytes(pub_keys_bytes)
 secure_query = SecureQuery.from_dump(secure_query_dump, ciphers_bytes, HE_pub)
 secure_result = secure_query.process(db, HE_pub, debug)
+secure_result_dump, ciphers_bytes = secure_result.dump()
 
 # Client: Receive encrypted query result and decrypt
+secure_result = SecureResult.from_dump(secure_result_dump, ciphers_bytes, HE)
 result = secure_result.decrypt(HE)
 print("Result:", result)
 

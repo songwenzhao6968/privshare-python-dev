@@ -28,7 +28,7 @@ class Pass:
                 right_child = rewrite_node(node.children[1])
                 if (left_child.type == NodeType.RANGE and right_child.type == NodeType.RANGE and
                     left_child.concerned_column == right_child.concerned_column):
-                    if left_child.value_r >= right_child.value_l -1 and right_child.value_r >= left_child.value_l - 1: # Note that [5,8] or [9,12] -> [5,12] is also okay
+                    if left_child.value_r >= right_child.value_l - 1 and right_child.value_r >= left_child.value_l - 1: # Note that [5,8] or [9,12] -> [5,12] is also okay
                         left_child.value_l = min(left_child.value_l, right_child.value_l)
                         left_child.value_r = max(left_child.value_r, right_child.value_r)
                         return left_child

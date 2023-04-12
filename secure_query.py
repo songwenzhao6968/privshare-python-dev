@@ -2,16 +2,42 @@ import json
 import myutil
 import numpy as np
 from he import PyCtxt
+from sql_parser import Query, QueryType
 
 class SecureResult():
-    def __init__(self, result_cipher, valid_slot_num):
-        self.result_cipher = result_cipher
+    def __init__(self, valid_slot_num, query_type, result_cipher=None):
         self.valid_slot_num = valid_slot_num
+        self.query_type = query_type
+        self.result_cipher = result_cipher
+
+    def serialize_to_json(self):
+        return {
+            "result_cipher": 0,
+            "valid_slot_num": self.valid_slot_num,
+            "query_type": self.query_type.value
+        }
+    
+    def dump(self):
+        ciphers_bytes = [self.result_cipher.to_bytes()]
+        return json.dumps(self.serialize_to_json()), ciphers_bytes
+    
+    @staticmethod
+    def from_dump(secure_result_dump, ciphers_bytes, HE):
+        secure_result_json = json.loads(secure_result_dump)
+        secure_result = SecureResult(secure_result_json["valid_slot_num"], 
+                                     QueryType(secure_result_json["query_type"]))
+        cipher = PyCtxt(pyfhel=HE)
+        cipher.from_bytes(ciphers_bytes[secure_result_json["result_cipher"]])
+        secure_result.result_cipher = cipher
+        return secure_result
 
     def decrypt(self, HE):
-        return HE.decryptInt(self.result_cipher)[:self.valid_slot_num][0]
+        result = HE.decryptInt(self.result_cipher)
+        if self.query_type == QueryType.AGGREGATE_AVG:
+            return result[1]/result[0]
+        else:
+            return result[0]
 
-from sql_parser import Query
 from execution import ExecutionTree, MatchBitsNode, NodeType
 from execution_pass import Pass
 
