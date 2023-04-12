@@ -49,7 +49,7 @@ class ComputationNode():
         elif type == NodeType.RETRIEVAL:
             node = RetrievalNode(node_json["concerned_columns"])
         elif type == NodeType.AGGREGATION:
-            node = AggregationNode(node_json["agg_type"], node_json["concerned_column"])
+            node = AggregationNode(QueryType(node_json["agg_type"]), node_json["concerned_column"])
         elif type == NodeType.AND:
             node = AndNode()
         elif type == NodeType.OR:
@@ -142,9 +142,13 @@ class AggregationNode(ComputationNode):
         if self.agg_type == QueryType.AGGREGATE_CNT:
             result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
             for ind_cipher in ind_ciphers:
-                result_cipher += he.sum_cipher(ind_cipher)
-            SecureResult(result_cipher, 1, debug)
-            return result_cipher
+                result_cipher += he.sum_cipher(ind_cipher, HE)
+            return SecureResult(result_cipher, 1)
+        # elif self.agg_type == QueryType.AGGREGATE_SUM:
+        #     result_cipher = HE.encryptInt(np.zeros(HE.n, dtype=np.int64))
+        #     for ind_cipher in ind_ciphers:
+        #         ind_cipher *= 
+        #         result_cipher += he.sum_cipher(ind_cipher)
 
 class AndNode(ComputationNode):
     def __init__(self):
@@ -415,9 +419,9 @@ class ExecutionTree():
         node_op.link(add_predicates(query.pred, schema))
     
     def get_query_type(self):
-        if self.root.type == NodeType.RETRIEVAL:
+        if self.root.children[0].type == NodeType.RETRIEVAL:
             return QueryType.RETRIEVE
-        elif self.root.type == NodeType.AGGREGATION:
+        elif self.root.children[0].type == NodeType.AGGREGATION:
             return self.root.children[0].agg_type
     
     def serialize_to_json(self):

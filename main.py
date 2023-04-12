@@ -11,7 +11,7 @@ with open(config_dir) as f:
 debug = config["debug"]
 
 # Client: Encrypt and send the query to the data provider
-sql = "SELECT SUM(deposit) FROM t_deposit WHERE amount < 18 OR user_name = \"Alice\""
+sql = "SELECT COUNT(*) FROM t_deposit WHERE user_name = \"Alice\""
 query = Query(sql)
 with open(config["tables"][query.concerned_table]["schema_file_loc"]) as f:
     null_data_db = DataBase.deserialize_from_json(json.load(f))
@@ -33,8 +33,8 @@ secure_query = SecureQuery.from_dump(secure_query_dump, ciphers_bytes, HE_pub)
 secure_result = secure_query.process(db, HE_pub, debug)
 
 # Client: Receive encrypted query result and decrypt
-ind = HE.decryptInt(secure_result[0])
-print("Result rows:", ind.nonzero())
+result = secure_result.decrypt(HE)
+print("Result:", result)
 
 if debug["timing"]:
     myutil.write_event_times()

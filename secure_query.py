@@ -1,8 +1,5 @@
 import json
 import myutil
-from sql_parser import Query
-from execution import ExecutionTree, MatchBitsNode, NodeType
-from execution_pass import Pass
 import numpy as np
 from he import PyCtxt
 
@@ -10,6 +7,13 @@ class SecureResult():
     def __init__(self, result_cipher, valid_slot_num):
         self.result_cipher = result_cipher
         self.valid_slot_num = valid_slot_num
+
+    def decrypt(self, HE):
+        return HE.decryptInt(self.result_cipher)[:self.valid_slot_num][0]
+
+from sql_parser import Query
+from execution import ExecutionTree, MatchBitsNode, NodeType
+from execution_pass import Pass
 
 class SecureQuery():
     def __init__(self, query: Query=None, schema=None, HE=None, config=None, debug=None,
