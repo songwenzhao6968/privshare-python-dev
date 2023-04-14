@@ -55,9 +55,9 @@ class Predicate:
 
     def check(self, record, schema):
         if self.type == "AND":
-            return self.left_child.check(record) and self.right_child.check(record)
+            return self.left_child.check(record, schema) and self.right_child.check(record, schema)
         elif self.type == "OR":
-            return self.left_child.check(record) or self.right_child.check(record)
+            return self.left_child.check(record, schema) or self.right_child.check(record, schema)
         elif self.type == "<":
             return record[schema.get_id(self.concerned_column)] < self.value
         elif self.type == "<=":
