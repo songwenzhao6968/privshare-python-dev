@@ -428,7 +428,7 @@ class ExecutionTree():
             return
         self.root = ReturnNode(query.concerned_table)
         if query.is_retrieve():
-            node_op = RetrievalNode(query.concerned_column)
+            node_op = RetrievalNode(query.concerned_columns)
         elif query.is_aggregate():
             node_op = AggregationNode(query.type, query.concerned_column)
         self.root.link(node_op)
