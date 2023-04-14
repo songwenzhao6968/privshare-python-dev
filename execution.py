@@ -3,9 +3,8 @@ from enum import Enum
 import myutil
 import numpy as np
 import he
-from sql_parser import Query, QueryType, Predicate
-from database import DataType
-from secure_query import SecureResult
+from database import DataType, Query, QueryType, Predicate
+from secure_database import SecureResult
 
 class NodeType(Enum):
     RETURN = "return"

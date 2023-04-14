@@ -2,7 +2,7 @@ import json
 import myutil
 import numpy as np
 from he import PyCtxt
-from sql_parser import Query, QueryType
+from database import Database, Query, QueryType
 
 class SecureResult():
     def __init__(self, valid_slot_num, query_type, result_cipher=None):
@@ -108,6 +108,7 @@ class SecureQuery():
             cipher.from_bytes(ciphers_bytes[id])
             secure_query.mapping_ciphers.append(cipher)
         return secure_query
-    
-    def process(self, db, HE, debug):
-        return self.exe_tree.process(db, self.mapping_ciphers, HE, debug)
+
+class SecureDatabase(Database):
+    def process(self, secure_query: SecureQuery, HE, debug):
+        return secure_query.exe_tree.process(self, secure_query.mapping_ciphers, HE, debug)

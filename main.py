@@ -1,9 +1,8 @@
 import json
 import myutil
-from database import DataBase
-from sql_parser import Query
-from secure_query import SecureQuery, SecureResult
 import he
+from database import DataBase, Query
+from secure_database import SecureDatabase, SecureQuery, SecureResult
 
 config_dir = "./examples/demo/config.json"
 with open(config_dir) as f:

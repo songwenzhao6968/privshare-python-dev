@@ -1,5 +1,6 @@
 import json
 from enum import Enum
+from sql_parser import Query, QueryType, Predicate
 
 class DataType(Enum):
     UINT8 = "uint8"
@@ -60,7 +61,7 @@ class Table:
         return Table(Schema.deserialize_from_json(table_json["schema"]),
                      table_json["data"])
 
-class DataBase:
+class Database:
     def __init__(self, tables):
         self.tables = tables
 
@@ -78,17 +79,27 @@ class DataBase:
         tables = {}
         for table_name, table_json in db_json.items():
             tables[table_name] = Table.deserialize_from_json(table_json)
-        return DataBase(tables)
+        return Database(tables)
     
     def dump(self):
         return json.dumps(self.serialize_to_json())
     
     @staticmethod
     def from_dump(db_dump):
-        return DataBase.deserialize_from_json(json.loads(db_dump))
+        return Database.deserialize_from_json(json.loads(db_dump))
+    
+    def process(self, query: Query):
+        table = self[query.concerned_table]
+        if query.type == QueryType.RETRIEVE:
+            concerned_column_id = [table.schema.get_id(concerned_column) 
+                                   for concerned_column in query.concerned_columns]
+            for record in table.data:
+                if query.pred.check(record, table.schema):
+                    value = record[concerned_column_id]
+
 
 if __name__ == "__main__":
     # Test
     with open("./examples/demo/provider_1/db.json") as f:
-        db = DataBase.deserialize_from_json(json.load(f)) 
+        db = Database.deserialize_from_json(json.load(f)) 
     print(db.dump())
