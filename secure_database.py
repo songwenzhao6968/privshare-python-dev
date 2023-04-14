@@ -2,7 +2,7 @@ import json
 import myutil
 import numpy as np
 from he import PyCtxt
-from database import Database, Query, QueryType
+from database import Database, Table, Query, QueryType
 
 class SecureResult():
     def __init__(self, valid_slot_num, query_type, result_cipher=None):
@@ -112,3 +112,14 @@ class SecureQuery():
 class SecureDatabase(Database):
     def process(self, secure_query: SecureQuery, HE, debug):
         return secure_query.exe_tree.process(self, secure_query.mapping_ciphers, HE, debug)
+    
+    @staticmethod
+    def deserialize_from_json(db_json):
+        tables = {}
+        for table_name, table_json in db_json.items():
+            tables[table_name] = Table.deserialize_from_json(table_json)
+        return SecureDatabase(tables)
+    
+    @staticmethod
+    def from_dump(db_dump):
+        return SecureDatabase.deserialize_from_json(json.loads(db_dump))
