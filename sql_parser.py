@@ -109,7 +109,7 @@ class QueryType(Enum):
 
 class Query:
     def __init__(self, sql=None, type=None, concerned_table=None, 
-                 concerned_column=None, concerned_columns=None, pred=None):
+                 concerned_columns=None, concerned_columns=None, pred=None):
         def get_tokens(sql):
             tokens, i, pre = [], 0, 0
             while i < len(sql):
