@@ -4,8 +4,8 @@ import he
 from database import Database, Query
 from secure_database import SecureDatabase, SecureQuery, SecureResult
 
-config_dir = "./examples/demo/config.json"
-with open(config_dir) as f:
+config_file_loc = "./examples/demo/config.json"
+with open(config_file_loc) as f:
     config = json.load(f)
 debug = config["debug"]
 
